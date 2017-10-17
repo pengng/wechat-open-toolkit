@@ -1,0 +1,27 @@
+{
+  "name": "wechat-open-toolkit",
+  "version": "0.0.1",
+  "description": "Wechat open platform toolkit",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pengng/wechat-open-toolkit.git"
+  },
+  "keywords": [
+    "wechat",
+    "open",
+    "platform",
+    "toolkit"
+  ],
+  "author": "yupeng.kuo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pengng/wechat-open-toolkit/issues"
+  },
+  "homepage": "https://github.com/pengng/wechat-open-toolkit#readme",
+  "dependencies": {
+    "wechat-encrypt": "^1.0.0",
+    "xml2js": "^0.4.19"
+  }
+}
