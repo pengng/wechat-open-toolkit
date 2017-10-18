@@ -48,6 +48,7 @@ const options = {
       let obj = await new Parse.Query('WeixinOpenToken').equalTo('componentAppId', result.componentAppId).first()
       if (!obj) {
         obj = new Parse.Object('WeixinOpenToken')
+        obj.set('componentAppId', result.componentAppId)
       }
       obj.set('componentVerifyTicket', result.ComponentVerifyTicket)
       await obj.save()
@@ -60,6 +61,7 @@ const options = {
       let obj = await new Parse.Query('WeixinOpenToken').equalTo('componentAppId', result.componentAppId).first()
       if (!obj) {
         obj = new Parse.Object('WeixinOpenToken')
+        obj.set('componentAppId', result.componentAppId)
       }
       obj.set('componentAccessToken', result.component_access_token)
       await obj.save()
@@ -67,6 +69,22 @@ const options = {
       console.error(err)
     }
   },
+  async saveAuthorizerToken (result) {
+    try {
+      let obj = await new Parse.Query('WeixinOpenAuthorizerToken').equalTo('authorizerAppId', result.authorizer_appid).first()
+      if (!obj) {
+        obj = new Parse.Object('WeixinOpenAuthorizerToken')
+        obj.set('authorizerAppId', result.authorizer_appid)
+        const componentObj = await new Parse.Query('WeixinOpenToken').equalTo('componentAppId', result.componentAppId).first()
+        obj.set('component', componentObj)
+      }
+      obj.set('authorizerAccessToken', result.authorizer_access_token)
+      obj.set('authorizerRefreshToken', result.authorizer_refresh_token)
+      await obj.save()
+    } catch(err) {
+      console.error(err)
+    }
+  }
   onError: console.error
 }
 
@@ -85,10 +103,10 @@ app.listen(3000,function () {
 | ------------------------- | -------- | ---- | ---------------------------------------- |
 | list                      | array    | 是    | 微信第三方账号                                  |
 | getComponentVerifyTicket  | function | 是    | 首次启动读取缓存的`component_verify_ticket`       |
-| saveComponentVerifyTicket | function | 是    | 保存新的`component_verify_ticket`            |
-| saveComponentAccessToken  | function | 是    | 保存新的`component_access_token`             |
-| onAuthorized              | function | 否    | 当有新的微信公众号授权事件时触发                         |
-| saveAuthorizerToken       | function | 是    | 保存新的微信公众号授权调用`API`的`authorizer_access_token`和用于刷新的`authorizer_refresh_token` |
+| saveComponentVerifyTicket | function | 是    | 保存新的`component_verify_ticket`，等同绑定`component_verify_ticket`事件。 |
+| saveComponentAccessToken  | function | 是    | 保存新的`component_access_token`，等同绑定`component_access_token`事件。 |
+| onAuthorized              | function | 否    | 当有新的微信公众号授权事件时触发， 等同绑定`authorized`事件。    |
+| saveAuthorizerToken       | function | 是    | 保存新的微信公众号授权调用`API`的`authorizer_access_token`和用于刷新的`authorizer_refresh_token`，等同绑定`authorizer_token`事件。 |
 | onError                   | function | 是    | 绑定错误事件。                                  |
 
 ### 事件
@@ -128,6 +146,40 @@ toolkit.on('component_access_token', result => {
   */
 })
 ```
+
+### Event: authorizer_token
+
+当刷新`authorizer_access_token`和`authorizer_refresh_token`时触发。
+
+```javascript
+toolkit.on('authorizer_token', result => {
+  console.log(result)
+  /**
+  {
+    authorizer_appid: 'wxf2338d927b405d39',
+    authorizer_access_token: 'j7mR_dvcCAmUq5Iw-MuzE4sBT0unN-ukg7LR8EqZEQ1wZ7oyw0rs1Idk40d7uxriOubE3795JiFa3e5jDGdofRpTemXd2HLLV6p_i_Uwy7m2Rp-qv1k1ld-T9iCCDcVeQONdALDFDC',
+    authorizer_refresh_token: 'refreshtoken@@@6Esz0GgFsth_vRPtqjQd_aIQcCBcJ4iuzQFf3akLwgg',
+    expires_in: 7200,
+    func_info: [
+      funcscope_category: 
+    ],
+    componentAppId: 'wx52ffab2939ad'
+  }
+  */
+})
+```
+
+#### Event: authorized
+
+授权成功事件。
+
+#### Event: updateauthorized
+
+更新授权事件。
+
+#### Event: unauthorized
+
+取消授权事件。
 
 #### Event: error
 
