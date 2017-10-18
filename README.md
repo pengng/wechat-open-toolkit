@@ -76,7 +76,6 @@ app.use('/wechat-open', toolkit.middlewarify())
 app.listen(3000,function () {
   console.log('server start at 3000')
 })
-
 ```
 
 ### options 参数属性
@@ -92,12 +91,6 @@ app.listen(3000,function () {
 | onError                   | function | 是    | 绑定错误事件。                                  |
 
 ### 事件
-
-- [component_verify_ticket](#event: component_verify_ticket)当收到新的`component_verify_ticket`时触发。
-- [component_access_token](#event: component_access_token) 当刷新`component_access_token`时触发。
-- [authorized](#event: authorized) 当微信公众号授权成功时触发。
-- [authorizer_token](#event: authorizer_token) 当刷新微信公众号授权调用`api`的`authorizer_access_token`时触发。
-- [error](#event: error) 错误事件
 
 #### Event: component_verify_ticket
 
@@ -118,7 +111,7 @@ toolkit.on('component_verify_ticket', result => {
 })
 ```
 
-####Event: component_access_token
+#### Event: component_access_token
 
 当刷新`component_access_token`时触发。
 
@@ -141,5 +134,23 @@ toolkit.on('component_access_token', result => {
 
 ```Javascript
 toolkit.on('error', console.error)
+```
+
+### 方法
+
+#### Function: authMiddlewarify(componentId)
+
+返回第三方平台授权中间件。
+
+```javascript
+app.get('/auth/test', toolkit.authMiddlewarify('wx52ffab2939ad'))
+```
+
+#### Function: middlewarify()
+
+返回授权事件处理中间件。
+
+```javascript
+app.use('/wechat/open', toolkit.middlewarify())
 ```
 
