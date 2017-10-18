@@ -28,7 +28,8 @@ const options = {
       componentAppId: '',
       componentAppSecret: '',
       token: '',
-      encodingAESKey: ''
+      encodingAESKey: '',
+      host: ''
     }
   ],
   async getComponentVerifyTicket (componentAppId, callback) {
