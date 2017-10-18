@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "description": "Wechat open platform toolkit",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "mock": "nodemon test/server.js",
+    "test": "node test/client.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/pengng/wechat-open-toolkit.git"
@@ -23,5 +26,10 @@
   "dependencies": {
     "wechat-encrypt": "^1.0.0",
     "xml2js": "^0.4.19"
+  },
+  "devDependencies": {
+    "express": "^4.16.2",
+    "nodemon": "^1.12.1",
+    "request": "^2.83.0"
   }
 }

@@ -1,0 +1,15 @@
+{
+  "server": {
+    "PORT": 3000
+  },
+  "wechatOpenToolkit": {
+    "list": [
+      {
+        "componentAppId": "wx52ffab8083s3k2a4",
+        "componentAppSecret": "c02623f9bd85e2049e43cdba996a397dc55",
+        "token": "test token",
+        "encodingAESKey": "2FUPAJ8hOQoBQeXLUhtLQgiBParKm8SyOWGmI2Gni52"
+      }
+    ]
+  }
+}
