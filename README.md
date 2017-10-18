@@ -91,7 +91,55 @@ app.listen(3000,function () {
 | saveAuthorizerToken       | function | 是    | 保存新的微信公众号授权调用`API`的`authorizer_access_token`和用于刷新的`authorizer_refresh_token` |
 | onError                   | function | 是    | 绑定错误事件。                                  |
 
+### 事件
 
+- [component_verify_ticket](#event: component_verify_ticket)当收到新的`component_verify_ticket`时触发。
+- [component_access_token](#event: component_access_token) 当刷新`component_access_token`时触发。
+- [authorized](#event: authorized) 当微信公众号授权成功时触发。
+- [authorizer_token](#event: authorizer_token) 当刷新微信公众号授权调用`api`的`authorizer_access_token`时触发。
+- [error](#event: error) 错误事件
 
+#### Event: component_verify_ticket
 
+当收到新的`component_verify_ticket`时触发。
+
+```javascript
+toolkit.on('component_verify_ticket', result => {
+  console.log(result)
+  /**
+  	{
+      AppId: 'wx52ffab2939ad',
+      componentAppId: 'wx52ffab2939ad',
+      CreateTime: '1508309812',
+      InfoType: 'component_verify_ticket',
+      ComponentVerifyTicket: 'ticket@@@lEHjsBEi_TPDey0IZxw4Zbb7JRYLOtEf9ksvDpSwzkwog3R6xEpdaK0yIee7JOyOXM0V7cp0dpM58GKmb8FSKA'
+  	}
+  */
+})
+```
+
+####Event: component_access_token
+
+当刷新`component_access_token`时触发。
+
+```javascript
+toolkit.on('component_access_token', result => {
+  console.log(result)
+  /**
+  {
+    componentAppId: 'wx52ffab2939ad',
+    component_access_token: 'M5CvflZyL5fkV29gU6MhQIoNsvzPEGBjYgmgA7yxnI_l8sblqm0QUULiMHoWY3gXPOnenZs3-42x_EenE1DEAg2F1K3X_fOI44h_eqxrV_7b0K7yc3pEGf_qTZl8HOlyCTSiAHAVML',
+    expires_in: 7200
+  }
+  */
+})
+```
+
+#### Event: error
+
+错误事件。
+
+```Javascript
+toolkit.on('error', console.error)
+```
 
