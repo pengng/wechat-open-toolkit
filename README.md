@@ -4,9 +4,9 @@ WeChat open platform Toolkit.
 
 微信开放平台工具包
 
-> The module is used to simplify the management of multiple WeChat open platform and multiple WeChat public number. Provide component_access_token and component_verify_ticket auto-refresh, and authorization event handling middleware.
+> The module is used to simplify the management of multiple WeChat open platform and multiple WeChat public number. Provide `component_access_token` and `component_verify_ticket`,`authorizer_access_token`,`authorizer_refresh_token` auto-refresh. Through the authorization event processing middleware and message agent middleware to help build the basic WeChat third party platform.
 >
-> 该模块用于简化管理多个微信开放平台和多个微信公众号。提供`component_access_token`和`component_verify_ticket`自动刷新，和授权事件处理中间件。
+> 该模块用于简化管理多个微信开放平台和多个微信公众号。提供`component_access_token`和`component_verify_ticket`、`authorizer_access_token`、`authorizer_refresh_token`自动刷新。通过授权事件处理中间件和消息代理中间件帮助搭建基础微信第三方平台。
 
 ### Usage
 
@@ -84,30 +84,259 @@ const options = {
     } catch(err) {
       console.error(err)
     }
-  }
+  },
+  async getAuthorizers (callback) {
+    try {
+      const result = await new Parse.Query('WeixinOpenAuthorizerToken').include('component').find()
+      if (!result) {
+        return callback()
+      }
+      const list = result.map(item => {
+        return {
+          componentAppId: item.get('component').get('componentAppId'),
+          authorizerAppId: item.get('authorizerAppId'),
+          authorizerRefreshToken: item.get('authorizerRefreshToken')
+        }
+      })
+      callback(null, list)
+    } catch(err) {
+      callback(err)
+    }
+  },
   onError: console.error
 }
 
 const toolkit = new WechatOpenToolkit(options)
 
-app.use('/wechat-open', toolkit.middlewarify())
+app.use('/wechat/open', toolkit.middlewarify())
+app.get('/wechat/authorization', toolkit.middlewarify())
 
 app.listen(3000,function () {
   console.log('server start at 3000')
 })
 ```
 
+### Step 1
+
+##### Configure WeChat open platform `appId` and `appSecret`
+
+```javascript
+const options = {
+  list: [
+    {
+      componentAppId: '', // wechat open platform appId
+      componentAppSecret: '', // wechat open platform appSecret
+      token: '', // message check Token
+      encodingAESKey: '', // message encryption and decryption key
+      host: '' // The domain name of the login authorization
+    }
+  ]
+}
+```
+
+### Step 2
+
+##### Configuration save function, save `component_verify_ticket`, `component_access_token`, `authorizer_access_token`, `authorizer_refresh_token`.
+
+```javascript
+const saveComponentVerifyTicket = function (result) {
+  /**
+  {
+    componentAppId: '',
+    ComponentVerifyTicket: '' // Note the capitalization of C
+  }
+  */
+  // save to the database
+}
+const saveComponentAccessToken = function (result) {
+  /**
+  {
+    componentAppId: '',
+    component_access_token: ''
+  }
+  */
+  // save to the database
+}
+const saveAuthorizerToken = function (result) {
+  /**
+  {
+    authorizer_appid: '',
+    authorizer_access_token: '',
+    authorizer_refresh_token: '',
+    componentAppId: ''
+  }
+  */
+  // save to the database
+}
+const options = {
+  list: [],
+  saveComponentVerifyTicket,
+  saveComponentAccessToken,
+  saveAuthorizerToken
+}
+```
+
+### Step 3
+
+##### Configure the initialization data function. Get `component_verify_ticket` and `authorizer_refresh_token`
+
+```javascript
+const getComponentVerifyTicket = function (componentAppId, callback) {
+  // Get data from the database
+  const componentVerifyTicket = ''
+  callback(err, componentVerifyTicket)
+  // Call the callback function to return componentVerifyTicket
+}
+const getAuthorizers = function (callback) {
+  // Get data from the database
+  // print result
+  /**
+  [
+    {
+      componentAppId: '',
+      authorizerAppId: '',
+      authorizerRefreshToken: ''
+    }
+  ]
+  */
+  callback(err, result)
+  // Call the callback function to return list
+}
+const options = {
+  getComponentVerifyTicket,
+  getAuthorizers
+}
+```
+
+### Step 4
+
+##### Configure the error handling function, instantiate the `WechatOpenToolkit`, and configure the route.
+
+```javascript
+const WechatOpenToolkit = require('wechat-open-toolkit')
+const app = require('express')()
+const onError = function (err) {
+  console.error(err)
+}
+const options = {
+  list,
+  saveComponentVerifyTicket,
+  saveComponentAccessToken,
+  saveAuthorizerToken,
+  getComponentVerifyTicket,
+  getAuthorizers,
+  onError
+}
+const toolkit = new WechatOpenToolkit(options)
+app.use('/wechat/open', toolkit.middlewarify())
+app.get('/wechat/authorization', toolkit.authMiddlewarify())
+app.listen(3000)
+console.log('server start at 3000!')
+console.log('The browser opens http://hostname/wechat/authorization')
+```
+
 ### options 参数属性
 
 | 名称                        | 类型       | 必填   | 描述                                       |
 | ------------------------- | -------- | ---- | ---------------------------------------- |
-| list                      | array    | 是    | 微信第三方账号                                  |
-| getComponentVerifyTicket  | function | 是    | 首次启动读取缓存的`component_verify_ticket`       |
-| saveComponentVerifyTicket | function | 是    | 保存新的`component_verify_ticket`，等同绑定`component_verify_ticket`事件。 |
-| saveComponentAccessToken  | function | 是    | 保存新的`component_access_token`，等同绑定`component_access_token`事件。 |
-| onAuthorized              | function | 否    | 当有新的微信公众号授权事件时触发， 等同绑定`authorized`事件。    |
-| saveAuthorizerToken       | function | 是    | 保存新的微信公众号授权调用`API`的`authorizer_access_token`和用于刷新的`authorizer_refresh_token`，等同绑定`authorizer_token`事件。 |
+| list                      | array    | 是    | [微信第三方账号列表](#list)                       |
+| saveComponentVerifyTicket | function | 是    | [保存新的component_verify_ticket](#savecomponentverifyticket)，等同绑定`component_verify_ticket`事件。 |
+| saveComponentAccessToken  | function | 是    | [保存新的component_access_token](#savecomponentaccesstoken)，等同绑定`component_access_token`事件。 |
+| saveAuthorizerToken       | function | 是    | [保存新的代理调用微信公众号接口的授权token](#saveauthorizertoken)。包含`authorizer_access_token`和用于刷新的`authorizer_refresh_token`，等同绑定`authorizer_token`事件。 |
+| getComponentVerifyTicket  | function | 是    | [首次启动读取缓存的component_verify_ticket](#getcomponentverifyticket) |
+| getAuthorizers            | function | 是    | [首次启动读取缓存的authorizer_refresh_token](#getauthorizers) |
 | onError                   | function | 是    | 绑定错误事件。                                  |
+| onAuthorized              | function | 否    | 当有新的微信公众号授权事件时触发， 等同绑定`authorized`事件。    |
+
+### list
+
+list 数组内的成员属性。
+
+| 名称                 | 类型     | 必填   | 描述             |
+| ------------------ | ------ | ---- | -------------- |
+| componentAppId     | string | 是    | 微信第三方appId     |
+| componentAppSecret | string | 是    | 微信第三方appSecret |
+| token              | string | 是    | 消息校验token      |
+| encodingAESKey     | string | 是    | 消息加解密K         |
+| host               | string | 是    | 登录授权发起页域名      |
+
+### saveComponentVerifyTicket
+
+保存新的`component_verify_ticket`，等同绑定`component_verify_ticket`事件。
+
+##### 参数 result 属性
+
+| 名称                    | 类型     | 描述                             |
+| --------------------- | ------ | ------------------------------ |
+| AppId                 | string | 微信第三方appId                     |
+| CreateTime            | string | 时间戳，秒。                         |
+| InfoType              | string | 事件类型，`component_verify_ticket` |
+| ComponentVerifyTicket | string | component_verify_ticket        |
+| componentAppId        | string | 微信第三方appId                     |
+
+### saveComponentAccessToken
+
+保存新的`component_access_token`，等同绑定`component_access_token`事件。
+
+##### 参数 result 属性
+
+| 名称                     | 类型     | 描述          |
+| ---------------------- | ------ | ----------- |
+| component_access_token | string | 调用第三方平台接口   |
+| Expires_in             | number | 7200 秒，2个小时 |
+| componentAppId         | string | 微信第三方appId  |
+
+### saveAuthorizerToken
+
+保存新的代理调用微信公众号接口的授权`token`。包含`authorizer_access_token`和用于刷新的`authorizer_refresh_token`
+
+##### 参数 result 属性
+
+| 名称                       | 类型     | 描述                      |
+| ------------------------ | ------ | ----------------------- |
+| authorizer_appid         | string | 授权微信公众号appd             |
+| authorizer_access_token  | string | 授权微信公众号调用接口token        |
+| authorizer_refresh_token | string | 刷新`access_token`用的token |
+| expires_in               | number | 7200 ，秒，                |
+| componentAppId           | string | 微信第三方appId              |
+
+### getComponentVerifyTicket
+
+##### 参数 componentAppId 和 callback
+
+```javascript
+const getComponentVerifyTicket = function (componentAppId, callback) {
+  // 从数据库取componentAppId对应的componentVerifyTicket,
+  // 调用callback返回
+  // 第一次使用时若没有componentVerifyTicket则直接调用callback
+  db.getCollection('WeixinOpenToken').findOne({
+    componentAppId: componentAppId
+  }, function (err, result) {
+    callback(err, result.componentVerifyTicket)
+  })
+}
+```
+
+### getAuthorizers
+
+##### 参数 callback
+
+```javascript
+const getAuthorizers = function (callback) {
+  // 从数据库获取保存的authorizer数据
+  // 返回格式
+  /**
+  {
+    componentAppId: '', 微信第三方appid
+    authorizerAppId: '', 微信公众号appid
+    authorizerRefreshToken: '' 微信公众号的刷新token
+  }
+  */
+  db.getCollection('WeixinOpenAuthorizerToken').find().toArray(function (err, result) {
+    callback(err, result)
+  })
+}
+```
 
 ### 事件
 
@@ -173,6 +402,19 @@ toolkit.on('authorizer_token', result => {
 
 授权成功事件。
 
+##### 参数 result
+
+| 名称                           | 类型     | 描述              |
+| ---------------------------- | ------ | --------------- |
+| AppId                        | string | 微信公众号           |
+| CreateTime                   | string | 时间戳             |
+| InfoType                     | string | 事件类型，authorized |
+| AuthorizerAppId              | string | 微信公众号appid      |
+| AuthorizationCode            | string | 微信公众号授权码        |
+| AuthorizationCodeExpiredTime | string | 过期时间戳           |
+| PreAuthCode                  | string | 预授权             |
+| componentAppId               | string | 微信第三方appId      |
+
 #### Event: updateauthorized
 
 更新授权事件。
@@ -197,6 +439,7 @@ toolkit.on('error', console.error)
 
 ```javascript
 app.get('/auth/test', toolkit.authMiddlewarify('wx52ffab2939ad'))
+// 浏览器打开该路由即可扫码授权
 ```
 
 #### Function: middlewarify()
@@ -204,6 +447,9 @@ app.get('/auth/test', toolkit.authMiddlewarify('wx52ffab2939ad'))
 返回授权事件处理中间件。
 
 ```javascript
-app.use('/wechat/open', toolkit.middlewarify())
+app.use('/wechat/open', toolkit.middlewarify(), (req, res, next) => {
+  // req.wechatOpenMessage 保存着解析后的对象数据
+  // 中间件已经响应了'success'，因此不需要再次响应。
+})
 ```
 
