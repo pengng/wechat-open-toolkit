@@ -91,7 +91,8 @@ const options = {
 const toolkit = new WechatOpenToolkit(options)
 
 app.use('/wechat/open', toolkit.middlewarify())
-app.get('/wechat/authorization', toolkit.middlewarify())
+app.get('/wechat/authorization', toolkit.authMiddlewarify())
+app.post('/wechat/authorizer/:authorizerAppId', toolkit.messageMiddlewarify())
 
 app.listen(3000,function () {
   console.log('server start at 3000')
@@ -103,17 +104,15 @@ app.listen(3000,function () {
 ##### Configure WeChat open platform `appId` and `appSecret`
 
 ```javascript
-const options = {
-  list: [
-    {
-      componentAppId: '', // wechat open platform appId
-      componentAppSecret: '', // wechat open platform appSecret
-      token: '', // message check Token
-      encodingAESKey: '', // message encryption and decryption key
-      host: '' // The domain name of the login authorization
-    }
-  ]
-}
+const list = [
+  {
+    componentAppId: '', // wechat open platform appId
+    componentAppSecret: '', // wechat open platform appSecret
+    token: '', // message check Token
+    encodingAESKey: '', // message encryption and decryption key
+    host: '' // The domain name of the login authorization
+  }
+]
 ```
 
 ### Step 2
@@ -150,12 +149,6 @@ const saveAuthorizerToken = function (result) {
   */
   // save to the database
 }
-const options = {
-  list: [],
-  saveComponentVerifyTicket,
-  saveComponentAccessToken,
-  saveAuthorizerToken
-}
 ```
 
 ### Step 3
@@ -168,9 +161,6 @@ const getComponentVerifyTicket = function (componentAppId, callback) {
   const componentVerifyTicket = ''
   callback(err, componentVerifyTicket)
   // Call the callback function to return componentVerifyTicket
-}
-const options = {
-  getComponentVerifyTicket
 }
 ```
 
@@ -193,11 +183,21 @@ const options = {
   onError
 }
 const toolkit = new WechatOpenToolkit(options)
-app.use('/wechat/open', toolkit.middlewarify())
-app.get('/wechat/authorization', toolkit.authMiddlewarify())
+app.use('/wechat/events', toolkit.middlewarify())
+list.forEach(item => {
+  const componentAppId = item.componentAppId
+  app.get(`/wechat/authorization/${componentAppId}`, 
+      toolkit.authMiddlewarify(componentAppId))
+  app.post(`/wechat/message/${componentAppId}/:authorizerAppId`,
+      toolkit.messageMiddlewarify(componentAppId),
+      (req, res, next) => {
+      	console.log(req.wechatOpenMessage)
+  	  }
+   )
+})
 app.listen(3000)
 console.log('server start at 3000!')
-console.log('The browser opens http://hostname/wechat/authorization')
+console.log('The browser opens http://hostname/wechat/authorization/[componentAppId]')
 ```
 
 ### options 参数属性
@@ -376,12 +376,13 @@ toolkit.on('error', console.error)
 
 ### 方法
 
-#### Function: authMiddlewarify(componentId)
+#### Function: authMiddlewarify(componentAppId)
 
 返回第三方平台授权中间件。
 
 ```javascript
-app.get('/auth/test', toolkit.authMiddlewarify('wx52ffab2939ad'))
+const componentAppId = 'wx52ffab2939ad'
+app.get('/auth/test', toolkit.authMiddlewarify(componentAppId))
 // 浏览器打开该路由即可扫码授权
 ```
 
@@ -393,6 +394,32 @@ app.get('/auth/test', toolkit.authMiddlewarify('wx52ffab2939ad'))
 app.use('/wechat/open', toolkit.middlewarify(), (req, res, next) => {
   // req.wechatOpenMessage 保存着解析后的对象数据
   // 中间件已经响应了'success'，因此不需要再次响应。
+})
+```
+
+#### Function: messageMiddlewarify(componentAppId)
+
+返回微信公众号处理中间件。
+
+```javascript
+app.post('/weechat/authorizer/:authorizerAppId', toolkit.messageMiddlewarify(componentAppId), (req, res, next) => {
+  // print req.params
+  /**
+  {
+    authorizerAppId: 'wx239skh03hsl23'
+  }
+  */
+  // print req.wechatOpenMessage
+  /**
+  {
+    ToUserName: 'gh_2a33e5f5a9b0',
+    FromUserName: 'oVtjJv5NEub-fbE7E6_P2_jCLMXo',
+    CreateTime: '1508406464',
+    MsgType: 'text',
+    Content: 'hello world',
+    MsgId: '6478556432393017916'
+  }
+  */
 })
 ```
 
