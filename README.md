@@ -85,24 +85,6 @@ const options = {
       console.error(err)
     }
   },
-  async getAuthorizers (callback) {
-    try {
-      const result = await new Parse.Query('WeixinOpenAuthorizerToken').include('component').find()
-      if (!result) {
-        return callback()
-      }
-      const list = result.map(item => {
-        return {
-          componentAppId: item.get('component').get('componentAppId'),
-          authorizerAppId: item.get('authorizerAppId'),
-          authorizerRefreshToken: item.get('authorizerRefreshToken')
-        }
-      })
-      callback(null, list)
-    } catch(err) {
-      callback(err)
-    }
-  },
   onError: console.error
 }
 
@@ -178,7 +160,7 @@ const options = {
 
 ### Step 3
 
-##### Configure the initialization data function. Get `component_verify_ticket` and `authorizer_refresh_token`
+##### Configure the initialization data function. Get `component_verify_ticket` 
 
 ```javascript
 const getComponentVerifyTicket = function (componentAppId, callback) {
@@ -187,24 +169,8 @@ const getComponentVerifyTicket = function (componentAppId, callback) {
   callback(err, componentVerifyTicket)
   // Call the callback function to return componentVerifyTicket
 }
-const getAuthorizers = function (callback) {
-  // Get data from the database
-  // print result
-  /**
-  [
-    {
-      componentAppId: '',
-      authorizerAppId: '',
-      authorizerRefreshToken: ''
-    }
-  ]
-  */
-  callback(err, result)
-  // Call the callback function to return list
-}
 const options = {
-  getComponentVerifyTicket,
-  getAuthorizers
+  getComponentVerifyTicket
 }
 ```
 
@@ -224,7 +190,6 @@ const options = {
   saveComponentAccessToken,
   saveAuthorizerToken,
   getComponentVerifyTicket,
-  getAuthorizers,
   onError
 }
 const toolkit = new WechatOpenToolkit(options)
@@ -244,7 +209,6 @@ console.log('The browser opens http://hostname/wechat/authorization')
 | saveComponentAccessToken  | function | 是    | [保存新的component_access_token](#savecomponentaccesstoken)，等同绑定`component_access_token`事件。 |
 | saveAuthorizerToken       | function | 是    | [保存新的代理调用微信公众号接口的授权token](#saveauthorizertoken)。包含`authorizer_access_token`和用于刷新的`authorizer_refresh_token`，等同绑定`authorizer_token`事件。 |
 | getComponentVerifyTicket  | function | 是    | [首次启动读取缓存的component_verify_ticket](#getcomponentverifyticket) |
-| getAuthorizers            | function | 是    | [首次启动读取缓存的authorizer_refresh_token](#getauthorizers) |
 | onError                   | function | 是    | 绑定错误事件。                                  |
 | onAuthorized              | function | 否    | 当有新的微信公众号授权事件时触发， 等同绑定`authorized`事件。    |
 
@@ -297,7 +261,7 @@ list 数组内的成员属性。
 | authorizer_appid         | string | 授权微信公众号appd             |
 | authorizer_access_token  | string | 授权微信公众号调用接口token        |
 | authorizer_refresh_token | string | 刷新`access_token`用的token |
-| expires_in               | number | 7200 ，秒，                |
+| expires_in               | number | 7200  秒，2个小时            |
 | componentAppId           | string | 微信第三方appId              |
 
 ### getComponentVerifyTicket
@@ -313,27 +277,6 @@ const getComponentVerifyTicket = function (componentAppId, callback) {
     componentAppId: componentAppId
   }, function (err, result) {
     callback(err, result.componentVerifyTicket)
-  })
-}
-```
-
-### getAuthorizers
-
-##### 参数 callback
-
-```javascript
-const getAuthorizers = function (callback) {
-  // 从数据库获取保存的authorizer数据
-  // 返回格式
-  /**
-  {
-    componentAppId: '', 微信第三方appid
-    authorizerAppId: '', 微信公众号appid
-    authorizerRefreshToken: '' 微信公众号的刷新token
-  }
-  */
-  db.getCollection('WeixinOpenAuthorizerToken').find().toArray(function (err, result) {
-    callback(err, result)
   })
 }
 ```
