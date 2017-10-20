@@ -452,3 +452,52 @@ app.get('/wechat/oauth/test', toolkit.oauthMiddlewarify(options), (req, res, nex
 | authorizerAppId | string | 是    | 微信公众号appid                               |
 | scope           | string | 否    | 授权作用域<br/>可能的值为：` snsapi_base` 和 ` snsapi_userinfo`。<br/>默认为：`snsapi_base` |
 
+#### Function: getAuthorizerAccessToken(componentAppId, authorizerAppId, callback)
+
+获取指定第三方平台下指定微信公众号的access_token。
+
+##### 参数列表
+
+| 名称              | 类型       | 必填   | 描述         |
+| --------------- | -------- | ---- | ---------- |
+| componentAppId  | string   | 是    | 微信第三方appid |
+| authorizerAppId | string   | 是    | 微信公众号appid |
+| callback        | function | 是    | 回调函数       |
+
+##### 回调函数参数
+
+| 名称           | 类型     | 描述                  |
+| ------------ | ------ | ------------------- |
+| err          | error  | 错误对象                |
+| access_token | string | 微信公众号授权access_token |
+
+> 需要代理微信公众号调用api接口时，可以调用该接口获取授权的access_token后调用。
+
+```javascript
+const WechatApi = require('co-wechat-api')
+const api = new WechatApi('', '', async () => {
+  return new Promise((resolve, reject) => {
+    toolkit.getAuthorizerAccessToken(componentAppId, authorizerAppId, (err, result) => {
+      if (err) {
+        return reject(err)
+      }
+      resolve({
+        accessToken: result.access_token,
+        expireTime: Date.now() + 1000 * 60
+      })
+    })
+  })
+})
+api.sendText(openid, text).then(console.log).catch(console.error)
+```
+
+#### Function: getApi(componentAppId, authorizerAppId)
+
+获取指定第三方平台下指定微信公众号的wechat-api对象。
+
+```javascript
+toolkit.getApi('wxdf023kdsj02k', 'wx39930sj2ljfs').sendText(openId, text, callback)
+```
+
+
+
