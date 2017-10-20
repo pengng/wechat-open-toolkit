@@ -223,7 +223,7 @@ list 数组内的成员属性。
 | componentAppId     | string | 是    | 微信第三方appId     |
 | componentAppSecret | string | 是    | 微信第三方appSecret |
 | token              | string | 是    | 消息校验token      |
-| encodingAESKey     | string | 是    | 消息加解密K         |
+| encodingAESKey     | string | 是    | 消息加解密Key       |
 | host               | string | 是    | 登录授权发起页域名      |
 
 ### getComponentVerifyTicket
