@@ -1,6 +1,6 @@
 {
   "name": "wechat-open-toolkit",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Wechat open platform toolkit",
   "main": "index.js",
   "scripts": {
