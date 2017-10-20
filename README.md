@@ -339,10 +339,10 @@ toolkit.on('authorizer_token', result => {
 
 | 名称                           | 类型     | 描述              |
 | ---------------------------- | ------ | --------------- |
-| AppId                        | string | 微信公众号           |
+| AppId                        | string | 微信第三方appId      |
 | CreateTime                   | string | 时间戳             |
 | InfoType                     | string | 事件类型，authorized |
-| AuthorizerAppId              | string | 微信公众号appid      |
+| AuthorizerAppid              | string | 微信公众号appid      |
 | AuthorizationCode            | string | 微信公众号授权码        |
 | AuthorizationCodeExpiredTime | string | 过期时间戳           |
 | PreAuthCode                  | string | 预授权             |
@@ -352,9 +352,32 @@ toolkit.on('authorizer_token', result => {
 
 更新授权事件。
 
+##### 参数 result
+
+| 名称                           | 类型     | 描述                    |
+| ---------------------------- | ------ | --------------------- |
+| AppId                        | string | 微信第三方appId            |
+| CreateTime                   | string | 时间戳                   |
+| InfoType                     | string | 事件类型，updateauthorized |
+| AuthorizerAppid              | string | 微信公众号appid            |
+| AuthorizationCode            | string | 微信公众号授权码              |
+| AuthorizationCodeExpiredTime | string | 过期时间戳                 |
+| PreAuthCode                  | string | 预授权                   |
+| componentAppId               | string | 微信第三方appId            |
+
 #### Event: unauthorized
 
 取消授权事件。
+
+##### 参数 result
+
+| 名称                           | 类型     | 描述                |
+| ---------------------------- | ------ | ----------------- |
+| AppId                        | string | 微信第三方appId        |
+| CreateTime                   | string | 时间戳               |
+| InfoType                     | string | 事件类型，unauthorized |
+| AuthorizerAppid              | string | 微信公众号appid        |
+| componentAppId               | string | 微信第三方appId        |
 
 #### Event: error
 
