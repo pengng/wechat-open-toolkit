@@ -372,6 +372,33 @@ toolkit.on('authorizer_token', result => {
 })
 ```
 
+### Event: authorizer_jsapi_ticket
+
+当刷新微信公众号网页`jsapi_ticket`时触发。
+
+#### 结果 result 对象属性
+
+| 名称                    | 类型     | 描述                     |
+| --------------------- | ------ | ---------------------- |
+| componentAppId        | string | 微信第三方appid             |
+| authorizerAppId       | string | 微信公众号appid             |
+| authorizerJsApiTicket | string | 微信公众号网页 `jsapi_ticket` |
+| expiresIn             | number | 时间戳。                   |
+
+```javascript
+toolkit.on('authorizer_jsapi_ticket', async (result) => {
+  console.log(result)
+  /**
+  {
+    componentAppId: '',
+    authorizerAppId: '',
+    authorizerJsApiTicket: '',
+    expiresIn: ''
+  }
+  */
+})
+```
+
 ### Event: authorized
 
 授权成功事件。
@@ -560,5 +587,42 @@ api.sendText(openid, text).then(console.log).catch(console.error)
 toolkit.getApi('wxdf023kdsj02k', 'wx39930sj2ljfs').sendText(openId, text, callback)
 ```
 
+#### 参数列表
+
+| 名称              | 类型     | 必填   | 描述         |
+| --------------- | ------ | ---- | ---------- |
+| componentAppId  | string | 是    | 微信第三方appid |
+| authorizerAppId | string | 是    | 微信公众号appid |
+
+#### Function: getJsConfig(options, callback)
+
+获取指定第三方平台下指定微信公众号的网页`jsConfig`配置对象。
+
+```javascript
+const options = {
+  componentAppId: '',
+  authorizerAppId: '',
+  url: ''
+}
+toolkit.getJsConfig(options, (err, result) => {
+  if (!err) console.log(result)
+  /**
+  {
+    appId: '',
+    timestamp: 158923408,
+    nonceStr: '292jslk30dk',
+    signature: '20kjafj20dfhl2j0sjhk2h3f0afjasd2',
+    jsApiList: []
+  }
+  */
+})
+```
+
+#### options 对象属性
 
 
+| 名称              | 类型     | 必填   | 描述         |
+| :-------------- | ------ | ---- | ---------- |
+| componentAppId  | string | 是    | 微信第三方appId |
+| authorizerAppId | string | 是    | 微信公众号appid |
+| url             | string | 是    | 网页链接       |
