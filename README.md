@@ -70,7 +70,7 @@ toolkit.on('component_verify_ticket', async (result) => {
     }
     obj.set('componentVerifyTicket', result.componentVerifyTicket)
     await obj.save()
-  } catch(err) {
+  } catch (err) {
     toolkit.emit('error', err)
   }
 })
@@ -87,7 +87,17 @@ toolkit.on('authorizer_token', async (result) => {
     obj.set('authorizerAccessToken', result.authorizerAccessToken)
     obj.set('authorizerRefreshToken', result.authorizerRefreshToken)
     await obj.save()
-  } catch(err) {
+  } catch (err) {
+    toolkit.emit('error', err)
+  }
+})
+
+toolkit.on('unauthorized', async (result) => {
+  try {
+    let obj = await new Parse.Query('WeixinOpenAuthorizerToken').equalTo('authorizerAppId', result.authorizerAppId).first()
+    if (!obj) return
+    await obj.destroy()
+  } catch (err) {
     toolkit.emit('error', err)
   }
 })
@@ -98,7 +108,10 @@ app.use('/wechat/events', toolkit.events())
 options.list.forEach(item => {
   const cid = item.componentAppId
   app.get(`/wechat/auth/${cid}`, 
-      toolkit.auth(cid)
+      toolkit.auth(cid),
+      (req, res) => {
+      	res.end('授权成功')
+  	  }
   )
   app.get(`/wechat/oauth/${cid}/:authorizerAppId`, (req, res, next) => {
     const aid = req.params.authorizerAppId
@@ -109,11 +122,14 @@ options.list.forEach(item => {
     }
     toolkit.oauth(options)(req, res, next)
   }, (req, res) => {
-    console.log(req.wxuser)
+    console.log(req.wechat)
     res.end('ok')
   })
   app.post(`/wechat/message/${cid}/:authorizerAppId`, 
-      toolkit.message(cid)
+      toolkit.message(cid),
+      (req, res) => {
+      	console.log(req.wechat)
+  	  }
   )
 })
 
@@ -208,7 +224,10 @@ app.use('/wechat/events', toolkit.events())
 list.forEach(item => {
   const cid = item.componentAppId
   app.get(`/wechat/auth/${cid}`, 
-      toolkit.auth(cid)
+      toolkit.auth(cid),
+      (req, res) => {
+      	res.end('ok')
+  	  }
   )
   app.get(`/wechat/oauth/${cid}/:authorizerAppId`, (req, res, next) => {
     const aid = req.params.authorizerAppId
@@ -219,11 +238,14 @@ list.forEach(item => {
     }
     toolkit.oauth(options)(req, res, next)
   }, (req, res) => {
-    console.log(req.wxuser)
+    console.log(req.wechat)
     res.end('ok')
   })
   app.post(`/wechat/message/${cid}/:authorizerAppId`, 
-      toolkit.message(cid)
+      toolkit.message(cid),
+      (req, res) => {
+      	console.log(req.wechat)
+  	  }
   )
 })
 app.listen(3000)
@@ -411,7 +433,9 @@ toolkit.on('error', console.error)
 
 ```javascript
 const componentAppId = 'wx52ffab2939ad'
-app.get(`/wechat/auth/${componentAppId}`, toolkit.auth(componentAppId))
+app.get(`/wechat/auth/${componentAppId}`, toolkit.auth(componentAppId), (req, res) => {
+  res.end('ok')
+})
 // 浏览器打开该路由即可扫码授权
 ```
 
@@ -420,10 +444,7 @@ app.get(`/wechat/auth/${componentAppId}`, toolkit.auth(componentAppId))
 返回授权事件处理中间件。
 
 ```javascript
-app.use('/wechat/events', toolkit.events(), (req, res, next) => {
-  // req.wechatOpenMessage 保存着解析后的对象数据
-  // 中间件已经响应了'success'，因此不需要再次响应。
-})
+app.use('/wechat/events', toolkit.events())
 ```
 
 #### Function: message(componentAppId)
@@ -432,14 +453,14 @@ app.use('/wechat/events', toolkit.events(), (req, res, next) => {
 
 ```javascript
 const componentAppId = 'wx52ffab2939ad'
-app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, toolkit.message(componentAppId), (req, res, next) => {
+app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, toolkit.message(componentAppId), (req, res) => {
   // print req.params
   /**
   {
     authorizerAppId: 'wx239skh03hsl23'
   }
   */
-  // print req.wechatOpenMessage
+  // print req.wechat
   /**
   {
     ToUserName: 'gh_2a33e5f5a9b0',
@@ -463,8 +484,8 @@ const options = {
   authorizerAppId: '',
   scope: ''
 }
-app.get(`/wechat/oauth/${options.componentAppId}/${options.authorizerAppId}`, toolkit.oauth(options), (req, res, next) => {
-  // print req.wxuser
+app.get(`/wechat/oauth/${options.componentAppId}/${options.authorizerAppId}`, toolkit.oauth(options), (req, res) => {
+  // print req.wechat
   /**
   {
     openid: 'oVtjJv5NEub-fbE7E6_P2_jCLMXo',
