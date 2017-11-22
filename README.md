@@ -528,6 +528,7 @@ app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, toolkit.message(c
   - `authorizerAppId` **<string>**
   - `scope` **<string>**
 
+
 `scope`为授权作用域。可能的值为：` snsapi_base` 和 ` snsapi_userinfo`。默认为：`snsapi_base`
 
 ```javascript
