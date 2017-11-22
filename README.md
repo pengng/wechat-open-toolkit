@@ -474,7 +474,7 @@ toolkit.on('error', console.error)
 
 返回第三方平台授权中间件。
 
-- `componentAppId` **<string>**
+- `componentAppId` \<string\>
 - `authType` **<number>**
 
 `authType` 指定授权时显示的可选项。`1` 表示仅展示公众号、`2` 表示仅展示小程序、`3` 表示展示公众号和小程序。默认为 `3` 。
@@ -500,7 +500,7 @@ app.use('/wechat/events', toolkit.events())
 
 返回微信公众号消息处理中间件
 
-- `componentAppId` **<string>** 第三方平台appId
+- `componentAppId` \<string\> 第三方平台appId
 
 ```javascript
 const componentAppId = 'wx52ffab2939ad'
@@ -523,10 +523,10 @@ app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, toolkit.message(c
 
 返回第三方平台代理微信公众号网页授权中间件。
 
-- `options` **<Object>**
-  - `componentAppId` **<string>** 
-  - `authorizerAppId` **<string>**
-  - `scope` **<string>**
+- `options` \<Object\>
+  - `componentAppId` \<string\> 
+  - `authorizerAppId` \<string\>
+  - `scope` \<string\>
 
 
 `scope`为授权作用域。可能的值为：` snsapi_base` 和 ` snsapi_userinfo`。默认为：`snsapi_base`
@@ -562,11 +562,11 @@ app.get(`/wechat/oauth/${options.componentAppId}/${options.authorizerAppId}`, to
 
 获取指定第三方平台下指定微信公众号的access_token。
 
-- `componentAppId` **<string>**
-- `authorizerAppId` **<string>**
-- `callback` **<Function>**
-  - `err` **<Error>**
-  - `access_token` **<string>** 微信公众号授权access_token
+- `componentAppId` \<string\>
+- `authorizerAppId` \<string\>
+- `callback` \<Function\>
+  - `err` \<Error\>
+  - `access_token` \<string\> 微信公众号授权access_token
 
 > 需要代理微信公众号调用api接口时，可以调用该接口获取授权的access_token后调用。
 
@@ -592,8 +592,8 @@ api.sendText(openid, text).then(console.log).catch(console.error)
 
 获取指定第三方平台下指定微信公众号的`wechat-api`对象。
 
-- `componentAppId` **<string>**
-- `authorizerAppId` **<string>**
+- `componentAppId` \<string\>
+- `authorizerAppId` \<string\>
 
 ```javascript
 toolkit.getApi('wxdf023kdsj02k', 'wx39930sj2ljfs').sendText(openId, text, callback)
@@ -603,13 +603,13 @@ toolkit.getApi('wxdf023kdsj02k', 'wx39930sj2ljfs').sendText(openId, text, callba
 
 获取指定第三方平台下指定微信公众号的网页`jsConfig`配置对象。
 
-- `options` **<Object>**
-  - `componentAppId` **<string>**
-  - `authorizerAppId` **<string>**
-  - `url` **<string>** 网页链接
-- `callback` **<Function>**
-  - `err` **<Error>**
-  - `result` **<Object>**
+- `options` \<Object\>
+  - `componentAppId` \<string\>
+  - `authorizerAppId` \<string\>
+  - `url` \<string\> 网页链接
+- `callback` \<Function\>
+  - `err` \<Error\>
+  - `result` \<Object\>
 
 ```javascript
 const options = {
@@ -635,11 +635,11 @@ toolkit.getJsConfig(options, (err, result) => {
 
 获取授权方账号基本信息
 
-- `componentAppId` **<string>** 微信第三方appId
-- `authorizerAppId` **<string>** 授权方公众号appId
-- `callback` **<Function>** 
-  - `err` **<Error>**
-  - `result` **<Object>**
+- `componentAppId` \<string\> 微信第三方appId
+- `authorizerAppId` \<string\> 授权方公众号appId
+- `callback` \<Function\> 
+  - `err` \<Error\>
+  - `result` \<Object\>
 
 ```javascript
 toolkit.getAuthorizerInfo(componentAppId, authorizerAppId, (err, result) => {
@@ -649,25 +649,25 @@ toolkit.getAuthorizerInfo(componentAppId, authorizerAppId, (err, result) => {
 
 ##### result 对象属性
 
-- `authorizerInfo` **<Object>**
-  - `nickname` **<string>** 授权方昵称
-  - `headImg` **<string>** 授权方头像
-  - `serviceTypeInfo` **<Object>**
+- `authorizerInfo` \<Object\>
+  - `nickname` \<string\> 授权方昵称
+  - `headImg` \<string\> 授权方头像
+  - `serviceTypeInfo` \<Object\>
     - `id` **<number>** 授权方公众号类型，0代表订阅号，1代表由历史老帐号升级后的订阅号，2代表服务号
-  - `verifyTypeInfo` **<Object>**
+  - `verifyTypeInfo` \<Object\>
     - `id` **<number>** 授权方认证类型，-1代表未认证，0代表微信认证，1代表新浪微博认证，2代表腾讯微博认证，3代表已资质认证通过但还未通过名称认证，4代表已资质认证通过、还未通过名称认证，但通过了新浪微博认证，5代表已资质认证通过、还未通过名称认证，但通过了腾讯微博认证
-  - `username` **<string>** 授权方公众号的原始ID
-  - `principalName` **<string>** 公众号的主体名称
-  - `businessInfo` **<Object>** 用以了解以下功能的开通状况（0代表未开通，1代表已开通）：
+  - `username` \<string\> 授权方公众号的原始ID
+  - `principalName` \<string\> 公众号的主体名称
+  - `businessInfo` \<Object\> 用以了解以下功能的开通状况（0代表未开通，1代表已开通）：
     - `openStore` **<number>** 是否开通微信门店功能
     - `openScan` **<number>** 是否开通微信扫商品功能
     - `openPay` **<number>** 是否开通微信支付功能
     - `openCard` **<number>** 是否开通微信卡券功能
     - `openShake` **<number>** 是否开通微信摇一摇功能
-  - `alias` **<string>** 授权方公众号所设置的微信号，可能为空
-  - `qrcodeUrl` **<string>** 二维码图片的URL，开发者最好自行也进行保存
-- `authorizationInfo` **<Object>** 授权信息
-  - `authorizerAppId` **<string>** 授权方appid
+  - `alias` \<string\> 授权方公众号所设置的微信号，可能为空
+  - `qrcodeUrl` \<string\> 二维码图片的URL，开发者最好自行也进行保存
+- `authorizationInfo` \<Object\> 授权信息
+  - `authorizerAppId` \<string\> 授权方appid
 
 *****
 
@@ -675,12 +675,12 @@ toolkit.getAuthorizerInfo(componentAppId, authorizerAppId, (err, result) => {
 
 获取授权方选项设置信息
 
-- `componentAppId` **<string>** 
-- `authorizerAppId` **<string>**
-- `optionName` **<string>**
-- `callback` **<Function>**
-  - `err` **<Error>**
-  - `result` **<Object>**
+- `componentAppId` \<string\> 
+- `authorizerAppId` \<string\>
+- `optionName` \<string\>
+- `callback` \<Function\>
+  - `err` \<Error\>
+  - `result` \<Object\>
 
 该API用于获取授权方的公众号或小程序的选项设置信息，如：地理位置上报，语音识别开关，多客服开关。
 
@@ -696,12 +696,12 @@ toolkit.getAuthorizerOptionInfo(componentAppId, authorizerAppId, optionName, (er
 
 设置授权方选项
 
-- `componentAppId` **<string>**
-- `authorizerAppId` **<string>**
-- `optionName` **<string>**
+- `componentAppId` \<string\>
+- `authorizerAppId` \<string\>
+- `optionName` \<string\>
 - `optionValue` **<number>**
-- `callback` **<Function>**
-  - `err` **<Error>**
+- `callback` \<Function\>
+  - `err` \<Error\>
 
 该API用于设置授权方的公众号或小程序的选项信息，如：地理位置上报，语音识别开关，多客服开关。
 
@@ -721,9 +721,9 @@ toolkit.setAuthorizerOption(componentAppId, authorizerAppId, optionName, optionV
 
 第三方平台对其所有API调用次数清零
 
-- `componentAppId` **<string>** 
-- `callback` **<Function>**
-  - `err` **<Error>**
+- `componentAppId` \<string\> 
+- `callback` \<Function\>
+  - `err` \<Error\>
 
 ```javascript
 toolkit.clearQuota(componentAppId, (err) => {
@@ -737,10 +737,10 @@ toolkit.clearQuota(componentAppId, (err) => {
 
 创建开放平台帐号并绑定公众号/小程序
 
-- `componentAppId` **<string>**
-- `authorizerAppId` **<string>**
-- `callback` **<Function>**
-  - `err` **<Error>**
+- `componentAppId` \<string\>
+- `authorizerAppId` \<string\>
+- `callback` \<Function\>
+  - `err` \<Error\>
 
 ```javascript
 toolkit.createOpenAccount(componentAppId, authorizerAppId, (err) => {
@@ -752,11 +752,11 @@ toolkit.createOpenAccount(componentAppId, authorizerAppId, (err) => {
 
 将公众号/小程序绑定到开放平台帐号下
 
-- `componentAppId` **<string>**
-- `authorizerAppId` **<string>**
-- `openAppId` **<string>**
-- `callback` **<Function>**
-  - `err` **<Error>**
+- `componentAppId` \<string\>
+- `authorizerAppId` \<string\>
+- `openAppId` \<string\>
+- `callback` \<Function\>
+  - `err` \<Error\>
 
 ```javascript
 toolkit.bindOpenAccount(componentAppId, authorizerAppId, (err) => {
@@ -768,11 +768,11 @@ toolkit.bindOpenAccount(componentAppId, authorizerAppId, (err) => {
 
 将公众号/小程序从开放平台帐号下解绑
 
-- `componentAppId` **<string>**
-- `authorizerAppId` **<string>**
-- `openAppId` **<string>**
+- `componentAppId` \<string\>
+- `authorizerAppId` \<string\>
+- `openAppId` \<string\>
 - `callback` **<Function>*
-  - `err` **<Error>**
+  - `err` \<Error\>
 
 ```javascript
 toolkit.unbindOpenAccount(componentAppId, authorizerAppId, (err) => {
@@ -784,11 +784,11 @@ toolkit.unbindOpenAccount(componentAppId, authorizerAppId, (err) => {
 
 获取公众号/小程序所绑定的开放平台帐号
 
-- `componentAppId` **<string>**
-- `authorizerAppId` **<string>**
-- `callback` **<Function>**
-  - `err` **<Error>**
-  - `result` **<Object>**
+- `componentAppId` \<string\>
+- `authorizerAppId` \<string\>
+- `callback` \<Function\>
+  - `err` \<Error\>
+  - `result` \<Object\>
 
 ```javascript
 toolkit.getOpenAccount(componentAppId, authorizerAppId, (err, result) => {
