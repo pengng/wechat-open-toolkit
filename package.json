@@ -1,36 +1,44 @@
 {
-  "name": "wechat-open-toolkit",
-  "version": "0.1.3",
-  "description": "Wechat open platform toolkit",
-  "main": "index.js",
-  "scripts": {
-    "mock": "nodemon test/server.js",
-    "test": "node test/client.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/pengng/wechat-open-toolkit.git"
-  },
-  "keywords": [
-    "wechat",
-    "open",
-    "platform",
-    "toolkit"
-  ],
-  "author": "yupeng.kuo",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/pengng/wechat-open-toolkit/issues"
-  },
-  "homepage": "https://github.com/pengng/wechat-open-toolkit#readme",
-  "dependencies": {
-    "wechat-api": "^1.35.1",
-    "wechat-encrypt": "^1.0.0",
-    "xml2js": "^0.4.19"
-  },
-  "devDependencies": {
-    "express": "^4.16.2",
-    "nodemon": "^1.12.1",
-    "request": "^2.83.0"
-  }
+    "name": "wechat-open-toolkit",
+    "version": "1.0.3",
+    "description": "微信开放平台工具套件。支持第三方平台代理公众号，完成网页授权、消息事件处理、JSSDK接口调用",
+    "main": "index.js",
+    "scripts": {
+        "mock": "nodemon test/server.js",
+        "test": "node test/client.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/pengng/wechat-open-toolkit.git"
+    },
+    "keywords": [
+        "微信",
+        "公众号",
+        "微信开放平台",
+        "第三方平台",
+        "网页授权",
+        "OAuth",
+        "JS SDK",
+        "小程序",
+        "事件",
+        "消息",
+        "服务号",
+        "订阅号"
+    ],
+    "author": "yupeng.kuo",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/pengng/wechat-open-toolkit/issues"
+    },
+    "homepage": "https://github.com/pengng/wechat-open-toolkit#readme",
+    "dependencies": {
+        "wechat-api": "^1.35.1",
+        "wechat-encrypt": "^1.0.0",
+        "xml2js": "^0.4.19"
+    },
+    "devDependencies": {
+        "express": "^4.16.2",
+        "nodemon": "^1.12.1",
+        "request": "^2.83.0"
+    }
 }

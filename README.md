@@ -1,12 +1,8 @@
 # wechat-open-toolkit
 
-wechat open platform toolkit.
+微信开放平台工具套件
 
-微信开放平台工具包
-
-> The module is used to simplify the management of multiple WeChat open platform and multiple WeChat public number. Provide `componentAccessToken` and `componentVerifyTicket`,`authorizerAccessToken`,`authorizerRefreshToken` auto-refresh. Through the authorization event processing middleware and message agent middleware to help build the basic WeChat third party platform.
->
-> 该模块用于简化管理多个微信开放平台和多个微信公众号。提供`componentAccessToken`和`componentVerifyTicket`、`authorizeAccessToken`、`authorizerRefreshToken`自动刷新。通过授权事件处理中间件和消息代理中间件帮助搭建基础微信第三方平台。
+该模块用于简化管理多个微信开放平台和多个微信公众号。提供`componentAccessToken`和`componentVerifyTicket`、`authorizeAccessToken`、`authorizerRefreshToken`自动刷新。通过授权事件处理中间件和消息代理中间件帮助搭建基础微信第三方平台。
 
 ### Usage
 
@@ -264,13 +260,14 @@ console.log('The browser opens http://hostname/wechat/authorization/[componentAp
 
 list 数组内的成员属性。
 
-| 名称                 | 类型     | 必填   | 描述             |
-| ------------------ | ------ | ---- | -------------- |
-| componentAppId     | string | 是    | 微信第三方appId     |
-| componentAppSecret | string | 是    | 微信第三方appSecret |
-| token              | string | 是    | 消息校验token      |
-| encodingAESKey     | string | 是    | 消息加解密Key       |
-| host               | string | 是    | 登录授权发起页域名      |
+| 名称               | 类型    | 必填 | 描述                              |
+| ------------------ | ------- | ---- | --------------------------------- |
+| componentAppId     | string  | 是   | 微信第三方appId                   |
+| componentAppSecret | string  | 是   | 微信第三方appSecret               |
+| token              | string  | 是   | 消息校验token                     |
+| encodingAESKey     | string  | 是   | 消息加解密Key                     |
+| host               | string  | 是   | 登录授权发起页域名                |
+| enableReply        | boolean | 否   | 默认值 false，会自动回复"success" |
 
 ### getComponentVerifyTicket
 
