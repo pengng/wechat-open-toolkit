@@ -12,10 +12,18 @@
         "url": "git+https://github.com/pengng/wechat-open-toolkit.git"
     },
     "keywords": [
-        "wechat",
-        "open",
-        "platform",
-        "toolkit"
+        "微信",
+        "公众号",
+        "微信开放平台",
+        "第三方平台",
+        "网页授权",
+        "OAuth",
+        "JS SDK",
+        "小程序",
+        "事件",
+        "消息",
+        "服务号",
+        "订阅号"
     ],
     "author": "yupeng.kuo",
     "license": "ISC",
