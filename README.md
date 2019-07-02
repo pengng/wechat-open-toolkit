@@ -1,264 +1,111 @@
-# wechat-open-toolkit
+# wechat-open-toolkit 微信开放平台工具套件
 
-微信开放平台工具套件
+**方便搭建基础的 Node.js 微信第三方服务平台。**
 
-该模块用于简化管理多个微信开放平台和多个微信公众号。提供`componentAccessToken`和`componentVerifyTicket`、`authorizeAccessToken`、`authorizerRefreshToken`自动刷新。通过授权事件处理中间件和消息代理中间件帮助搭建基础微信第三方平台。
-
-### Usage
+### 示例代码
 
 ```shell
 npm i wechat-open-toolkit -S
 ```
 
 ```javascript
-const Parse = require('parse/node')
 const express = require('express')
 const app = express()
 const WechatOpenToolkit = require('wechat-open-toolkit')
-Parse.initialize('')
-Parse.serverURL = ''
 
 const options = {
-  list: [
-    {
-      componentAppId: '',
-      componentAppSecret: '',
-      token: '',
-      encodingAESKey: '',
-      host: ''
+    list: [
+        {
+            componentAppId: '', // 微信第三方平台 appId
+            componentAppSecret: '', // 微信第三方平台 appSecret
+            token: '', // 消息校验 Token
+            encodingAESKey: '', // 消息加解密 key
+            host: '' // 网页授权的域名
+        }
+    ],
+    async getComponentVerifyTicket (componentAppId, callback) {
+        callback([err[, component_verify_ticket]])
     }
-  ],
-  async getComponentVerifyTicket (componentAppId, callback) {
-    try {
-      const result = await new Parse.Query('WeixinOpenToken').equalTo('componentAppId', componentAppId).first()
-      if (!result) {
-        return callback(null)
-      }
-      callback(null, result.get('componentVerifyTicket'))
-    } catch(err) {
-      callback(err)
-    }
-  }
 }
 
 const toolkit = new WechatOpenToolkit(options)
 
-toolkit.on('component_access_token', async (result) => {
-  try {
-    let obj = await new Parse.Query('WeixinOpenToken').equalTo('componentAppId', result.componentAppId).first()
-    if (!obj) {
-      obj = new Parse.Object('WeixinOpenToken')
-      obj.set('componentAppId', result.componentAppId)
-    }
-    obj.set('componentAccessToken', result.componentAccessToken)
-    await obj.save()
-  } catch(err) {
-    toolkit.emit('error', err)
-  }
+toolkit.on('component_access_token', function (result) {
+    console.log(result)
 })
 
-toolkit.on('component_verify_ticket', async (result) => {
-  try {
-    let obj = await new Parse.Query('WeixinOpenToken').equalTo('componentAppId', result.componentAppId).first()
-    if (!obj) {
-      obj = new Parse.Object('WeixinOpenToken')
-      obj.set('componentAppId', result.componentAppId)
-    }
-    obj.set('componentVerifyTicket', result.componentVerifyTicket)
-    await obj.save()
-  } catch (err) {
-    toolkit.emit('error', err)
-  }
+toolkit.on('component_verify_ticket', function (result) {
+    console.log(result)
 })
 
-toolkit.on('authorizer_token', async (result) => {
-  try {
-    let obj = await new Parse.Query('WeixinOpenAuthorizerToken').equalTo('authorizerAppId', result.authorizerAppId).first()
-    if (!obj) {
-      obj = new Parse.Object('WeixinOpenAuthorizerToken')
-      obj.set('authorizerAppId', result.authorizerAppId)
-      const componentObj = await new Parse.Query('WeixinOpenToken').equalTo('componentAppId', result.componentAppId).first()
-      obj.set('component', componentObj)
-    }
-    obj.set('authorizerAccessToken', result.authorizerAccessToken)
-    obj.set('authorizerRefreshToken', result.authorizerRefreshToken)
-    await obj.save()
-  } catch (err) {
-    toolkit.emit('error', err)
-  }
+toolkit.on('authorizer_token', function (result) {
+    console.log(result)
 })
 
-toolkit.on('unauthorized', async (result) => {
-  try {
-    let obj = await new Parse.Query('WeixinOpenAuthorizerToken').equalTo('authorizerAppId', result.authorizerAppId).first()
-    if (!obj) return
-    await obj.destroy()
-  } catch (err) {
-    toolkit.emit('error', err)
-  }
+toolkit.on('unauthorized', function (result) {
+    console.log(result)
 })
 
 toolkit.on('error', console.error)
 
 app.use('/wechat/events', toolkit.events())
 options.list.forEach(item => {
-  const cid = item.componentAppId
-  app.get(`/wechat/auth/${cid}`, 
-      toolkit.auth(cid),
-      (req, res) => {
-      	res.end('授权成功')
-  	  }
-  )
-  app.get(`/wechat/oauth/${cid}/:authorizerAppId`, (req, res, next) => {
-    const aid = req.params.authorizerAppId
-    const options = {
-      componentAppId: cid,
-      authorizerAppId: aid,
-      scope: 'snsapi_userinfo'
-    }
-    toolkit.oauth(options)(req, res, next)
-  }, (req, res) => {
-    console.log(req.wechat)
-    res.end('ok')
-  })
-  app.post(`/wechat/message/${cid}/:authorizerAppId`, 
-      toolkit.message(cid),
-      (req, res) => {
-      	console.log(req.wechat)
-  	  }
-  )
+    const cid = item.componentAppId
+    app.get(`/wechat/auth/${cid}`, 
+            toolkit.auth(cid),
+            (req, res) => {
+                res.end('授权成功')
+            }
+    )
+    app.get(`/wechat/oauth/${cid}/:authorizerAppId`, (req, res, next) => {
+        const aid = req.params.authorizerAppId
+        const options = {
+            componentAppId: cid,
+            authorizerAppId: aid,
+            scope: 'snsapi_userinfo'
+        }
+        toolkit.oauth(options)(req, res, next)
+    }, (req, res) => {
+        console.log(req.wechat)
+        res.end('ok')
+    })
+    app.post(`/wechat/message/${cid}/:authorizerAppId`, 
+            toolkit.message(cid),
+            (req, res) => {
+                console.log(req.wechat)
+            }
+    )
 })
 
 app.listen(3000,function () {
-  console.log('server start at 3000')
+    console.log('server start at 3000')
 })
 ```
 
-### Step 1
 
-##### Configure WeChat open platform `appId` and `appSecret`
 
-```javascript
-const list = [
-  {
-    componentAppId: '', // wechat open platform appId
-    componentAppSecret: '', // wechat open platform appSecret
-    token: '', // message check Token
-    encodingAESKey: '', // message encryption and decryption key
-    host: '' // The domain name of the login authorization
-  }
-]
-```
+### 微信第三方平台要求配置2个URL，分别推送第三方平台事件和公众号事件，列表整理如下：
 
-### Step 2
+- 授权事件接收URL
+  - component_verity_ticket 当微信服务器推送 **component_verity_ticket** 时触发
+  - authorized 当有新的公众号授权给第三方平台时触发
+  - updateauthorized 当已授权公众号修改授权给第三方平台的权限时触发
+  - unauthorized 当已授权公众号取消授权时触发
+- 公众号消息接收URL
+  - 推送用户与公众号的消息
+  - 用户点击底部菜单、关注、取消关注、扫码事件
 
-##### Configuration save function, save `componentVerifyTicket`, `componentAccessToken`, `authorizerAccessToken`, `authorizerRefreshToken`.
 
-```javascript
-toolkit.on('component_access_token', function (result) {
-  /**
-  print result
-  {
-    componentAppId: '',
-    componentAccessToken: ''
-  }
-  */
-  // save to the database
-})
 
-toolkit.on('component_verify_ticket', function (result) {
-  /**
-  {
-    componentAppId: '',
-    componentVerifyTicket: ''
-  }
-  */
-  // save to the database
-})
+### 微信开放平台 和 微信第三方平台
 
-toolkit.on('authorizer_token', function (result) {
-  /**
-  {
-    authorizerAppId: '',
-    authorizerAccessToken: '',
-    authorizerRefreshToken: '',
-    componentAppId: ''
-  }
-  */
-  // save to the database
-})
+微信开放平台账号需要在 [微信开放平台](https://open.weixin.qq.com/) 注册，注册后得到账号和密码。(注册时提供的邮箱之前未注册过公众号和小程序)
 
-toolkit.on('error', console.error)
-```
+一个微信开放平台账号可以创建多个第三方平台，创建后得到第三方平台的 **appId** 和 **appSecret**。也就是代码中使用的**componentAppId**、**componentAppSecret** 。(第三方平台的数量有上限，定制化开发服务商类型上限是**5个**、平台型服务商类型上限是**5个**)
 
-### Step 3
 
-##### Configure the initialization data function. Get `componentVerifyTicket` 
 
-```javascript
-const getComponentVerifyTicket = function (componentAppId, callback) {
-  // Get data from the database
-  const componentVerifyTicket = ''
-  callback(err, componentVerifyTicket)
-  // Call the callback function to return componentVerifyTicket
-}
-```
-
-### Step 4
-
-##### Configure the error handling function, instantiate the `WechatOpenToolkit`, and configure the route.
-
-```javascript
-const WechatOpenToolkit = require('wechat-open-toolkit')
-const app = require('express')()
-const options = {
-  list,
-  getComponentVerifyTicket
-}
-const toolkit = new WechatOpenToolkit(options)
-app.use('/wechat/events', toolkit.events())
-list.forEach(item => {
-  const cid = item.componentAppId
-  app.get(`/wechat/auth/${cid}`, 
-      toolkit.auth(cid),
-      (req, res) => {
-      	res.end('ok')
-  	  }
-  )
-  app.get(`/wechat/oauth/${cid}/:authorizerAppId`, (req, res, next) => {
-    const aid = req.params.authorizerAppId
-    const options = {
-      componentAppId: cid,
-      authorizerAppId: aid,
-      scope: 'snsapi_userinfo'
-    }
-    toolkit.oauth(options)(req, res, next)
-  }, (req, res) => {
-    console.log(req.wechat)
-    res.end('ok')
-  })
-  app.post(`/wechat/message/${cid}/:authorizerAppId`, 
-      toolkit.message(cid),
-      (req, res) => {
-      	console.log(req.wechat)
-  	  }
-  )
-})
-app.listen(3000)
-console.log('server start at 3000!')
-console.log('The browser opens http://hostname/wechat/authorization/[componentAppId]')
-```
-
-### options 参数属性
-
-| 名称                       | 类型       | 必填   | 描述                                       |
-| ------------------------ | -------- | ---- | ---------------------------------------- |
-| list                     | array    | 是    | [微信第三方账号列表](#list)                       |
-| getComponentVerifyTicket | function | 是    | [首次启动读取缓存的component_verify_ticket](#getcomponentverifyticket) |
-
-### list
-
-list 数组内的成员属性。
+#### 第三方平台列表配置
 
 | 名称               | 类型    | 必填 | 描述                              |
 | ------------------ | ------- | ---- | --------------------------------- |
@@ -269,187 +116,143 @@ list 数组内的成员属性。
 | host               | string  | 是   | 登录授权发起页域名                |
 | enableReply        | boolean | 否   | 默认值 false，会自动回复"success" |
 
-### getComponentVerifyTicket
 
-##### 参数 componentAppId 和 callback
+
+#### getComponentVerifyTicket
 
 ```javascript
-const getComponentVerifyTicket = function (componentAppId, callback) {
-  // 从数据库取componentAppId对应的componentVerifyTicket,
-  // 调用callback返回
-  // 第一次使用时若没有componentVerifyTicket则直接调用callback
-  db.getCollection('WeixinOpenToken').findOne({
-    componentAppId: componentAppId
-  }, function (err, result) {
-    callback(err, result.componentVerifyTicket)
-  })
+function getComponentVerifyTicket (componentAppId, callback) {
+  	// 调用 callback 返回上次保存的 component_verify_ticket 和错误信息（如果有的话）
+		callback([err [, component_verify_ticket]])
 }
 ```
 
-### 事件
 
-#### Event: component_verify_ticket
 
-当收到新的`componentVerifyTicket`时触发。
-
-##### 参数 result 属性
-
-| 名称                    | 类型     | 描述                             |
-| --------------------- | ------ | ------------------------------ |
-| componentAppId        | string | 微信第三方appId                     |
-| componentVerifyTicket | string | 微信第三方 `componentVerifyTicket`  |
-| infoType              | string | 事件类型，`component_verify_ticket` |
-| createTime            | number | 消息生成时间戳，秒。                     |
+#### 当收到微信推送的 componentVerifyTicket 时触发 component_verify_ticket 事件
 
 ```javascript
-toolkit.on('component_verify_ticket', result => {
-  console.log(result)
-  /**
-  	{
-      componentAppId: 'wx52ffab2939ad',
-      infoType: 'component_verify_ticket',
-      componentVerifyTicket: 'ticket@@@lEHjsBEi_TPDey0IZxw4Zbb7JRYLOtEf9ksvDpSwzkwog3R6xEpdaK0yIee7JOyOXM0V7cp0dpM58GKmb8FSKA',
-      createTime: 142345003
-  	}
-  */
+toolkit.on('component_verify_ticket', function (result) {
+/* {
+    componentAppId: 'wx52ffab2939ad',
+    infoType: 'component_verify_ticket',
+    componentVerifyTicket: 'ticket@@@lEHjsBEi_TPDey0IZxw4Zbb7JRYLOtEf9ksvDpSwzkwog3R6xEpdaK0yIee7JOyOXM0V7cp0dpM58GKmb8FSKA',
+    createTime: 142345003
+} */
 })
 ```
 
-#### Event: component_access_token
 
-当刷新`componentAccessToken`时触发。
 
-##### 参数 result 属性
-
-| 名称                   | 类型     | 描述           |
-| -------------------- | ------ | ------------ |
-| componentAppId       | string | 微信第三方appId   |
-| componentAccessToken | string | 第三方平台接口token |
-| expiresIn            | number | 7200 秒，2个小时  |
+#### 当刷新 componentAccessToken 时触发 component_access_token 事件
 
 ```javascript
-toolkit.on('component_access_token', result => {
-  console.log(result)
-  /**
-  {
+toolkit.on('component_access_token', function (result) {
+/* {
     componentAppId: 'wx52ffab2939ad',
     componentAccessToken: 'M5CvflZyL5fkV29gU6MhQIoNsvzPEGBjYgmgA7yxnI_l8sblqm0QUULiMHoWY3gXPOnenZs3-42x_EenE1DEAg2F1K3X_fOI44h_eqxrV_7b0K7yc3pEGf_qTZl8HOlyCTSiAHAVML',
     expiresIn: 7200
-  }
-  */
+} */
 })
 ```
 
-### Event: authorizer_token
 
-当刷新`authorizerAccessToken`和`authorizerRefreshToken`时触发。
 
-##### 参数 result 属性
-
-| 名称                     | 类型     | 描述                               |
-| ---------------------- | ------ | -------------------------------- |
-| componentAppId         | string | 微信第三方appId                       |
-| authorizerAppId        | string | 授权微信公众号appid                     |
-| authorizerAccessToken  | string | 授权微信公众号调用接口token                 |
-| authorizerRefreshToken | string | 刷新`authorizerAccessToken`用的token |
-| expiresIn              | number | 时间戳，7200秒                        |
+#### 当刷新 authorizerAccessToken 时触发 authorizer_token 事件
 
 ```javascript
-toolkit.on('authorizer_token', result => {
-  console.log(result)
-  /**
-  {
-    componentAppId: 'wx52ffab2939ad',
-    authorizerAppId: 'wxf2338d927b405d39',
-    authorizerAccessToken: 'j7mR_dvcCAmUq5Iw-MuzE4sBT0unN-ukg7LR8EqZEQ1wZ7oyw0rs1Idk40d7uxriOubE3795JiFa3e5jDGdofRpTemXd2HLLV6p_i_Uwy7m2Rp-qv1k1ld-T9iCCDcVeQONdALDFDC',
-    authorizerRefreshToken: 'refreshtoken@@@6Esz0GgFsth_vRPtqjQd_aIQcCBcJ4iuzQFf3akLwgg',
-    expiresIn: 7200
-  }
-  */
+toolkit.on('authorizer_token', function (result) {
+    /**
+    {
+        componentAppId: 'wx52ffab2939ad',
+        authorizerAppId: 'wxf2338d927b405d39',
+        authorizerAccessToken: 'j7mR_dvcCAmUq5Iw-MuzE4sBT0unN-ukg7LR8EqZEQ1wZ7oyw0rs1Idk40d7uxriOubE3795JiFa3e5jDGdofRpTemXd2HLLV6p_i_Uwy7m2Rp-qv1k1ld-T9iCCDcVeQONdALDFDC',
+        authorizerRefreshToken: 'refreshtoken@@@6Esz0GgFsth_vRPtqjQd_aIQcCBcJ4iuzQFf3akLwgg',
+        expiresIn: 7200
+    }
+    */
 })
 ```
 
-### Event: authorizer_jsapi_ticket
 
-当刷新微信公众号网页`jsapi_ticket`时触发。
 
-#### 结果 result 对象属性
-
-| 名称                    | 类型     | 描述                     |
-| --------------------- | ------ | ---------------------- |
-| componentAppId        | string | 微信第三方appid             |
-| authorizerAppId       | string | 微信公众号appid             |
-| authorizerJsApiTicket | string | 微信公众号网页 `jsapi_ticket` |
-| expiresIn             | number | 时间戳。                   |
+#### 当刷新 jsapi_ticket 时触发 authorizer_jsapi_ticket 事件
 
 ```javascript
-toolkit.on('authorizer_jsapi_ticket', async (result) => {
-  console.log(result)
-  /**
-  {
+toolkit.on('authorizer_jsapi_ticket', function (result) {
+/* {
     componentAppId: '',
     authorizerAppId: '',
     authorizerJsApiTicket: '',
     expiresIn: ''
-  }
-  */
+} */
 })
 ```
 
-### Event: authorized
 
-授权成功事件。
 
-##### 参数 result
+#### 当新的公众号授权成功时触发 authorized 事件
 
-| 名称                           | 类型     | 描述                |
-| ---------------------------- | ------ | ----------------- |
-| componentAppId               | string | 微信第三方appId        |
-| authorizerAppId              | string | 微信公众号appid        |
-| authorizationCode            | string | 微信公众号授权码          |
-| authorizationCodeExpiredTime | number | 授权码过期时间戳，秒        |
-| preAuthCode                  | string | 预授权码              |
-| createTime                   | number | 时间戳               |
-| infoType                     | string | 事件类型，`authorized` |
-
-### Event: update_authorized
-
-更新授权事件。
-
-##### 参数 result
-
-| 名称                           | 类型     | 描述                       |
-| ---------------------------- | ------ | ------------------------ |
-| componentAppId               | string | 微信第三方appId               |
-| authorizerAppId              | string | 微信公众号appid               |
-| authorizationCode            | string | 微信公众号授权码                 |
-| authorizationCodeExpiredTime | number | 授权码过期时间戳，秒               |
-| preAuthCode                  | string | 预授权码                     |
-| createTime                   | number | 时间戳                      |
-| infoType                     | string | 事件类型，`update_authorized` |
-
-### Event: unauthorized
-
-取消授权事件。
-
-##### 参数 result
-
-| 名称              | 类型     | 描述                  |
-| --------------- | ------ | ------------------- |
-| componentAppId  | string | 微信第三方appId          |
-| authorizerAppId | string | 微信公众号appid          |
-| createTime      | number | 消息创建时间戳，秒           |
-| infoType        | string | 事件类型 `unauthorized` |
-
-### Event: error
-
-错误事件。
-
-```Javascript
-toolkit.on('error', console.error)
+```javascript
+toolkit.on('authorized', function (result) {
+/* {
+    componentAppId: '',
+    authorizerAppId: '',
+    authorizationCode: '',
+    authorizationCodeExpiredTime: 7200,
+    preAuthCode: '',
+    createTime: 142345003,
+    infoType: 'authorized'
+} */
+})
 ```
 
-### Function
+
+
+#### 当已授权公众号更新权限时触发 update_authorized 事件
+
+```javascript
+toolkit.on('update_authorized', function (result) {
+/* {
+    componentAppId: '',
+    authorizerAppId: '',
+    authorizationCode: '',
+    authorizationCodeExpiredTime: 7200,
+    preAuthCode: '',
+    createTime: 142345003,
+    infoType: 'update_authorized'
+} */
+})
+```
+
+
+
+#### 当已授权公众号取消授权时触发 unauthorized 事件
+
+```javascript
+toolkit.on('unauthorized', function (result) {
+/* {
+    componentAppId: '',
+    authorizerAppId: '',
+    createTime: 142345003,
+    infoType: 'unauthorized'
+} */
+})
+```
+
+
+
+#### 当有错误时触发 error 事件
+
+```Javascript
+toolkit.on('error', function (err) {
+		console.error(err)
+})
+```
+
+
+
+#### 函数列表
 
 - `auth(componentAppId, authType)` [返回第三方平台授权中间件](#auth)
 - `events()` [返回授权事件处理中间件](#events)
