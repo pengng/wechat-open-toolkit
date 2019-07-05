@@ -129,18 +129,29 @@ function getComponentVerifyTicket (componentAppId, callback) {
 
 
 
-#### 当收到微信推送的 componentVerifyTicket 时触发 component_verify_ticket 事件
+#### 当收到微信推送的 component_verify_ticket 时触发 component_verify_ticket 事件
 
 ```javascript
 toolkit.on('component_verify_ticket', function (result) {
 /* {
-    componentAppId: 'wx52ffab2939ad',
-    infoType: 'component_verify_ticket',
-    componentVerifyTicket: 'ticket@@@lEHjsBEi_TPDey0IZxw4Zbb7JRYLOtEf9ksvDpSwzkwog3R6xEpdaK0yIee7JOyOXM0V7cp0dpM58GKmb8FSKA',
-    createTime: 142345003
+    AppId: "wx52ffab2939ad",
+    CreateTime: "142345003"
+    InfoType: "component_verify_ticket",
+    ComponentVerifyTicket: 'ticket@@@lEHjsBEi_TPDey0IZxw4Zbb7JRYLOtEf9ksvDpSwzkwog3R6xEpdaK0yIee7JOyOXM0V7cp0dpM58GKmb8FSKA'
 } */
 })
 ```
+
+> 微信服务器会每隔10分钟推送1次，目前没有主动触发微信推送的机制，解决方法是存储上一次的推送数据，并且每次启动时，主动触发一次相同事件。示例如下：
+>
+> ```
+> toolkit.emit('component_verify_ticket', {
+>     AppId: "wx52ffab2939ad",
+>     CreateTime: "142345003"
+>     InfoType: "component_verify_ticket",
+>     ComponentVerifyTicket: 'ticket@@@lEHjsBEi_TPDey0IZxw4Zbb7JRYLOtEf9ksvDpSwzkwog3R6xEpdaK0yIee7JOyOXM0V7cp0dpM58GKmb8FSKA'
+> })
+> ```
 
 
 

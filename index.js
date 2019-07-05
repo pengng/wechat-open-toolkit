@@ -1,1 +1,1 @@
-module.exports = require('./lib/component_list')
+module.exports = require('./lib/toolkit')
