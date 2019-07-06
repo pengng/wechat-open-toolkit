@@ -1,0 +1,40 @@
+{
+    "text": {
+        "Content": "{1}"
+    },
+
+    "image": {
+        "Image": {
+            "MediaId": "{1}"
+        }
+    },
+
+    "voice": {
+        "Voice": {
+            "MediaId": "{1}"
+        }
+    },
+
+    "video": {
+        "Video": {
+            "MediaId": "{1}",
+            "Title": "{2}",
+            "Description": "{3}"
+        }
+    },
+
+    "music": {
+        "Music": {
+            "MusicUrl": "{1}",
+            "Title": "{2}",
+            "Description": "{3}",
+            "HQMusicUrl": "{4}",
+            "ThumbMediaId": "{5}"
+        }
+    },
+
+    "news": {
+        "ArticleCount": "",
+        "Articles": ""
+    }
+}

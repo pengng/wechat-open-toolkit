@@ -19,13 +19,9 @@ const options = {
             componentAppId: '', // 微信第三方平台 appId
             componentAppSecret: '', // 微信第三方平台 appSecret
             token: '', // 消息校验 Token
-            encodingAESKey: '', // 消息加解密 key
-            host: '' // 网页授权的域名
+            encodingAESKey: '' // 消息加解密 key
         }
-    ],
-    async getComponentVerifyTicket (componentAppId, callback) {
-        callback([err[, component_verify_ticket]])
-    }
+    ]
 }
 
 const toolkit = new WechatOpenToolkit(options)
