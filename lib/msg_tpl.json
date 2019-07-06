@@ -1,35 +1,35 @@
 {
     "text": {
-        "Content": "{1}"
+        "Content": "{0}"
     },
 
     "image": {
         "Image": {
-            "MediaId": "{1}"
+            "MediaId": "{0}"
         }
     },
 
     "voice": {
         "Voice": {
-            "MediaId": "{1}"
+            "MediaId": "{0}"
         }
     },
 
     "video": {
         "Video": {
-            "MediaId": "{1}",
-            "Title": "{2}",
-            "Description": "{3}"
+            "MediaId": "{0}",
+            "Title": "{1}",
+            "Description": "{2}"
         }
     },
 
     "music": {
         "Music": {
-            "MusicUrl": "{1}",
-            "Title": "{2}",
-            "Description": "{3}",
-            "HQMusicUrl": "{4}",
-            "ThumbMediaId": "{5}"
+            "MusicUrl": "{0}",
+            "Title": "{1}",
+            "Description": "{2}",
+            "HQMusicUrl": "{3}",
+            "ThumbMediaId": "{4}"
         }
     },
 
