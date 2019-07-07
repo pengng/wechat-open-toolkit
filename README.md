@@ -12,8 +12,13 @@ npm i wechat-open-toolkit -S
 const express = require('express')
 const app = express()
 const WechatOpenToolkit = require('wechat-open-toolkit')
+const {
+    EVENT_COMPONENT_VERIFY_TICKET, EVENT_AUTHORIZED, EVENT_UPDATE_AUTHORIZED,
+    EVENT_UNAUTHORIZED, EVENT_COMPONENT_ACCESS_TOKEN, EVENT_AUTHORIZER_ACCESS_TOKEN, 
+    EVENT_AUTHORIZER_JSAPI_TICKET
+} = WechatOpenToolkit
 
-const options = {
+const toolkit = new WechatOpenToolkit({
     list: [
         {
             componentAppId: '', // 微信第三方平台 appId
@@ -22,60 +27,40 @@ const options = {
             encodingAESKey: '' // 消息加解密 key
         }
     ]
-}
-
-const toolkit = new WechatOpenToolkit(options)
-
-toolkit.on('component_access_token', function (result) {
-    console.log(result)
 })
 
-toolkit.on('component_verify_ticket', function (result) {
-    console.log(result)
-})
+// 列出需要侦听的全部事件列表
+let eventList = [
+    EVENT_COMPONENT_VERIFY_TICKET, EVENT_AUTHORIZED, EVENT_UPDATE_AUTHORIZED,
+    EVENT_UNAUTHORIZED, EVENT_COMPONENT_ACCESS_TOKEN, EVENT_AUTHORIZER_ACCESS_TOKEN, 
+    EVENT_AUTHORIZER_JSAPI_TICKET, 'error'
+]
 
-toolkit.on('authorizer_token', function (result) {
-    console.log(result)
-})
+eventList.forEach(event => toolkit.on(event, console.log)) // 批量绑定事件处理函数
 
-toolkit.on('unauthorized', function (result) {
-    console.log(result)
-})
-
-toolkit.on('error', console.error)
-
+// 通常需要绑定4个中间件
+// 1.绑定第三方平台授权事件的中间件
 app.use('/wechat/events', toolkit.events())
-options.list.forEach(item => {
-    const cid = item.componentAppId
-    app.get(`/wechat/auth/${cid}`, 
-            toolkit.auth(cid),
-            (req, res) => {
-                res.end('授权成功')
-            }
-    )
-    app.get(`/wechat/oauth/${cid}/:authorizerAppId`, (req, res, next) => {
-        const aid = req.params.authorizerAppId
-        const options = {
-            componentAppId: cid,
-            authorizerAppId: aid,
-            scope: 'snsapi_userinfo'
-        }
+options.list.forEach(({ componentAppId }) => {
+    // 2.绑定第三方平台网页授权的中间件
+    app.get(`/wechat/auth/${componentAppId}`, toolkit.auth(componentAppId, 'https://domain.com/'))
+    // 3.绑定授权方网页授权的中间件
+    app.get(`/wechat/oauth/${componentAppId}/:authorizerAppId`, (req, res, next) => {
+        let { authorizerAppId } = req.params
         toolkit.oauth(options)(req, res, next)
-    }, (req, res) => {
-        console.log(req.wechat)
-        res.end('ok')
+        toolkit.oauth(componentAppId, authorizerAppId, 'https://domain.com/')(req, res, next)
     })
-    app.post(`/wechat/message/${cid}/:authorizerAppId`, 
-            toolkit.message(cid),
-            (req, res) => {
-                console.log(req.wechat)
-            }
-    )
+    // 4.绑定授权方用户消息的中间件
+    app.post(`/wechat/message/${componentAppId}/:authorizerAppId`,
+        toolkit.message(componentAppId), toolkit.autoTest(componentAppId),
+        (req, res) => {
+      			console.log(req.wechat)
+      			res.end('success') // 响应微信服务器
+    })
 })
 
-app.listen(3000,function () {
-    console.log('server start at 3000')
-})
+app.listen(3000)
+console.log('server start at 3000')
 ```
 
 
@@ -103,45 +88,34 @@ app.listen(3000,function () {
 
 #### 第三方平台列表配置
 
-| 名称               | 类型    | 必填 | 描述                              |
-| ------------------ | ------- | ---- | --------------------------------- |
-| componentAppId     | string  | 是   | 微信第三方appId                   |
-| componentAppSecret | string  | 是   | 微信第三方appSecret               |
-| token              | string  | 是   | 消息校验token                     |
-| encodingAESKey     | string  | 是   | 消息加解密Key                     |
-| host               | string  | 是   | 登录授权发起页域名                |
-| enableReply        | boolean | 否   | 默认值 false，会自动回复"success" |
-
-
-
-#### getComponentVerifyTicket
-
-```javascript
-function getComponentVerifyTicket (componentAppId, callback) {
-  	// 调用 callback 返回上次保存的 component_verify_ticket 和错误信息（如果有的话）
-		callback([err [, component_verify_ticket]])
-}
-```
+| 名称               | 类型   | 必填 | 描述                |
+| ------------------ | ------ | ---- | ------------------- |
+| componentAppId     | string | 是   | 微信第三方appId     |
+| componentAppSecret | string | 是   | 微信第三方appSecret |
+| token              | string | 是   | 消息校验token       |
+| encodingAESKey     | string | 是   | 消息加解密Key       |
 
 
 
 #### 当收到微信推送的 component_verify_ticket 时触发 component_verify_ticket 事件
 
 ```javascript
-toolkit.on('component_verify_ticket', function (result) {
+toolkit.on(EVENT_COMPONENT_VERIFY_TICKET, function (result) {
 /* {
-    AppId: "wx52ffab2939ad",
-    CreateTime: "142345003"
+    AppId: "wx304925fbea25bcbe",
+    CreateTime: "1562424829"
     InfoType: "component_verify_ticket",
     ComponentVerifyTicket: 'ticket@@@lEHjsBEi_TPDey0IZxw4Zbb7JRYLOtEf9ksvDpSwzkwog3R6xEpdaK0yIee7JOyOXM0V7cp0dpM58GKmb8FSKA'
 } */
 })
 ```
 
-> 微信服务器会每隔10分钟推送1次，目前没有主动触发微信推送的机制，解决方法是存储上一次的推送数据，并且每次启动时，主动触发一次相同事件。示例如下：
+> ！微信服务器会每隔10分钟推送1次，这会导致每次进程重新启动后，有1至10分钟服务不可用（因为其他功能全部依赖于 component_verify_ticket），解决方法是存储上一次的推送数据，并且每次启动时，主动触发一次相同事件。示例如下：
 >
 > ```
-> toolkit.emit('component_verify_ticket', {
+> // ！在所有侦听事件绑定完成后，再触发事件
+> // 从数据库（或其他地方）读取上次缓存的数据，通过事件通知给组件
+> toolkit.emit(EVENT_COMPONENT_VERIFY_TICKET, {
 >     AppId: "wx52ffab2939ad",
 >     CreateTime: "142345003"
 >     InfoType: "component_verify_ticket",
@@ -151,31 +125,31 @@ toolkit.on('component_verify_ticket', function (result) {
 
 
 
-#### 当刷新 componentAccessToken 时触发 component_access_token 事件
+#### 当刷新第三方平台 access token 时触发 component_access_token 事件
 
 ```javascript
-toolkit.on('component_access_token', function (result) {
+toolkit.on(EVENT_COMPONENT_ACCESS_TOKEN, function (result) {
 /* {
-    componentAppId: 'wx52ffab2939ad',
-    componentAccessToken: 'M5CvflZyL5fkV29gU6MhQIoNsvzPEGBjYgmgA7yxnI_l8sblqm0QUULiMHoWY3gXPOnenZs3-42x_EenE1DEAg2F1K3X_fOI44h_eqxrV_7b0K7yc3pEGf_qTZl8HOlyCTSiAHAVML',
-    expiresIn: 7200
+    component_access_token: 'M5CvflZyL5fkV29gU6MhQIoNsvzPEGBjYgmgA7yxnI_l8sblqm0QUULiMHoWY3gXPOnenZs3-42x_EenE1DEAg2F1K3X_fOI44h_eqxrV_7b0K7yc3pEGf_qTZl8HOlyCTSiAHAVML',
+    expires_in: 7200,
+    componentAppId: 'componentAppId'
 } */
 })
 ```
 
 
 
-#### 当刷新 authorizerAccessToken 时触发 authorizer_token 事件
+#### 当刷新授权方 access token 时触发 authorizer_access_token 事件
 
 ```javascript
-toolkit.on('authorizer_token', function (result) {
+toolkit.on(EVENT_AUTHORIZER_ACCESS_TOKEN, function (result) {
     /**
     {
-        componentAppId: 'wx52ffab2939ad',
-        authorizerAppId: 'wxf2338d927b405d39',
-        authorizerAccessToken: 'j7mR_dvcCAmUq5Iw-MuzE4sBT0unN-ukg7LR8EqZEQ1wZ7oyw0rs1Idk40d7uxriOubE3795JiFa3e5jDGdofRpTemXd2HLLV6p_i_Uwy7m2Rp-qv1k1ld-T9iCCDcVeQONdALDFDC',
-        authorizerRefreshToken: 'refreshtoken@@@6Esz0GgFsth_vRPtqjQd_aIQcCBcJ4iuzQFf3akLwgg',
-        expiresIn: 7200
+        AppId: 'wx304925fbea25bcbe',
+        authorizer_appid: 'wxc736b9251b3c6c41',
+        authorizer_access_token: 'j7mR_dvcCAmUq5Iw-MuzE4sBT0unN-ukg7LR8EqZEQ1wZ7oyw0rs1Idk40d7uxriOubE3795JiFa3e5jDGdofRpTemXd2HLLV6p_i_Uwy7m2Rp-qv1k1ld-T9iCCDcVeQONdALDFDC',
+        authorizer_refresh_token: 'refreshtoken@@@6Esz0GgFsth_vRPtqjQd_aIQcCBcJ4iuzQFf3akLwgg',
+        expires_in: 7200
     }
     */
 })
@@ -183,15 +157,17 @@ toolkit.on('authorizer_token', function (result) {
 
 
 
-#### 当刷新 jsapi_ticket 时触发 authorizer_jsapi_ticket 事件
+#### 当刷新授权方 jsapi_ticket 时触发 authorizer_jsapi_ticket 事件
 
 ```javascript
-toolkit.on('authorizer_jsapi_ticket', function (result) {
+toolkit.on(EVENT_AUTHORIZER_JSAPI_TICKET, function (result) {
 /* {
-    componentAppId: '',
-    authorizerAppId: '',
-    authorizerJsApiTicket: '',
-    expiresIn: ''
+		errcode: 0,
+		errmsg: 'ok',
+    ticket: 'Zqqmael1_O_ddyFwCE14BtflzySMrtVpp086SHhK3P07xXnhjii2MTmKAGQHBwPOg8GsEtR9HG_dHUngs22ayQ',
+    expires_in: 7200,
+    componentAppId: 'wx304925fbea25bcbe',
+    authorizerAppId: 'wxc736b9251b3c6c41'
 } */
 })
 ```
@@ -201,33 +177,33 @@ toolkit.on('authorizer_jsapi_ticket', function (result) {
 #### 当新的公众号授权成功时触发 authorized 事件
 
 ```javascript
-toolkit.on('authorized', function (result) {
+toolkit.on(EVENT_AUTHORIZED, function (result) {
 /* {
-    componentAppId: '',
-    authorizerAppId: '',
-    authorizationCode: '',
-    authorizationCodeExpiredTime: 7200,
-    preAuthCode: '',
-    createTime: 142345003,
-    infoType: 'authorized'
+    AppId: 'wx304925fbea25bcbe',
+    CreateTime: '1562428385',
+    InfoType: 'authorized',
+    AuthorizerAppid: 'wxc736b9251b3c6c41',
+    AuthorizationCode: 'queryauthcode@@@SozCwT_ve8WQI6Poum-qdGrrBrnQoX2rApglrUIMF0e308IQY7w_tCfAkndxzUth_YwHDto8DUsIeNrX4atetA',
+    AuthorizationCodeExpiredTime: '1562431985',
+    PreAuthCode: 'preauthcode@@@c4Uh5vOCS3wu9Bbx4tJWxplzkn5swwVHQc9xGtF57C1lfk_UeW50INZsh2flrwxh'
 } */
 })
 ```
 
 
 
-#### 当已授权公众号更新权限时触发 update_authorized 事件
+#### 当已授权公众号更新权限时触发 updateauthorized 事件
 
 ```javascript
-toolkit.on('update_authorized', function (result) {
+toolkit.on(EVENT_UPDATE_AUTHORIZED, function (result) {
 /* {
-    componentAppId: '',
-    authorizerAppId: '',
-    authorizationCode: '',
-    authorizationCodeExpiredTime: 7200,
-    preAuthCode: '',
-    createTime: 142345003,
-    infoType: 'update_authorized'
+    AppId: 'wx304925fbea25bcbe',
+    CreateTime: '1562426956',
+    InfoType: 'updateauthorized',
+    AuthorizerAppid: 'wxc736b9251b3c6c41',
+    AuthorizationCode: 'queryauthcode@@@SozCwT_ve8WQI6Poum-qdG_rFKaepJCyhL-zx1OkvsxmmJkbZadF78t3U9lh20IaWFqb2DcLne7MGVICr5eRfQ',
+    AuthorizationCodeExpiredTime: '1562430556',
+    PreAuthCode: 'preauthcode@@@ivkKNYhiXXsDFLBmH2ccOCg6doXsD_RdQOS7Cxw5GoILrdQktfx_glIzmhWQrMyT'
 } */
 })
 ```
@@ -237,12 +213,12 @@ toolkit.on('update_authorized', function (result) {
 #### 当已授权公众号取消授权时触发 unauthorized 事件
 
 ```javascript
-toolkit.on('unauthorized', function (result) {
+toolkit.on(EVENT_UNAUTHORIZED, function (result) {
 /* {
-    componentAppId: '',
-    authorizerAppId: '',
-    createTime: 142345003,
-    infoType: 'unauthorized'
+    AppId: 'wx304925fbea25bcbe',
+    CreateTime: '1562428154',
+    InfoType: 'unauthorized',
+    AuthorizerAppid: 'wxc736b9251b3c6c41'
 } */
 })
 ```
@@ -261,12 +237,17 @@ toolkit.on('error', function (err) {
 
 #### 函数列表
 
-- `auth(componentAppId, authType)` [返回第三方平台授权中间件](#auth)
-- `events()` [返回授权事件处理中间件](#events)
-- `message(componentAppId)` [返回微信公众号消息处理中间件](#message)
-- `oauth(options)` [返回第三方平台代理微信公众号网页授权中间件](#oauth)
-- `getAuthorizerAccessToken(componentAppId, authorizerAppId, callback)`  [获取指定第三方平台下指定微信公众号的 **access token**](#getauthorizeraccesstoken)
-- `getApi(componentAppId, authorizerAppId)` [获取指定第三方平台下指定微信公众号的 **wechat api** 对象](#getapi)
+中间件：
+
+- **auth(componentAppId, redirectUrl [, authType])** [返回第三方平台授权中间件](#auth)
+- **events()** [返回第三方平台授权事件处理中间件](#events)
+- **message(componentAppId)** [返回授权方消息处理中间件](#message)
+- **autoTest(componentAppId)** [返回全网发布测试用例的中间件](#autoTest)
+- **oauth(componentAppId, authorizerAppId, redirectUrl [, scope [, state]])** [返回授权方网页授权中间件](#oauth)
+- **getAuthorizerAccessToken(componentAppId, authorizerAppId, callback)**  [获取指定第三方平台下指定微信公众号的 **access token**](#getauthorizeraccesstoken)
+
+主动调用接口：
+
 - `getJsConfig(options, callback)` [获取指定第三方平台下指定微信公众号的网页 **js config** 配置对象](#getjsconfig)
 - `getAuthorizerInfo(componentAppId, authorizerAppId, callback)` [获取授权方账号基本信息](#getauthorizerinfo)
 - `getAuthorizerOptionInfo(componentAppId, authorizerAppId, optionName, callback)` [获取授权方选项设置信息](#getauthorizeroptioninfo)
@@ -277,35 +258,44 @@ toolkit.on('error', function (err) {
 - `unbindOpenAccount(componentAppId, authorizerAppId, openAppId, callback)` [将公众号/小程序从开放平台帐号下解绑](#unbindopenaccount)
 - `getOpenAccount(componentAppId, authorizerAppId, callback)` [获取公众号/小程序所绑定的开放平台帐号](#getopenaccount)
 
+
+
 #### auth
 
 返回第三方平台授权中间件。
 
-- `componentAppId` \<string\>
-- `authType` **<number>**
+- `componentAppId` \<string\> 第三方平台APPID
+- `redirectUrl` \<string\> 授权成功后重定向的URL
+- `authType` \<number\> 授权的类型
 
-`authType` 指定授权时显示的可选项。`1` 表示仅展示公众号、`2` 表示仅展示小程序、`3` 表示展示公众号和小程序。默认为 `3` 。
+**redirectUrl** 该链接的域名必须和当前服务的域名相同，而且和微信第三方平台配置的域名相同。
+
+**authType** 指定授权时显示的可选项。**1** 表示仅展示公众号、**2** 表示仅展示小程序、**3** 表示展示公众号和小程序。默认为 **3** 
 
 ```javascript
-const componentAppId = 'wx52ffab2939ad'
-const authType = 3
-app.get(`/wechat/auth/${componentAppId}`, toolkit.auth(componentAppId, authType), (req, res) => {
-  res.end('ok')
-})
+const { AUTH_TYPE_BOTH } = require('wechat-open-toolkit')
+let componentAppId = 'wx52ffab2939ad'
+let redirectUrl = 'https://domain.com/authorized'
+
+app.get(`/wechat/auth/${componentAppId}`, toolkit.auth(componentAppId, redirectUrl, AUTH_TYPE_BOTH))
 // 浏览器打开该路由即可扫码授权
 ```
 
+
+
 #### events
 
-返回授权事件处理中间件。
+返回第三方平台授权事件处理中间件。
 
 ```javascript
 app.use('/wechat/events', toolkit.events())
 ```
 
+
+
 #### message
 
-返回微信公众号消息处理中间件
+返回授权方消息处理中间件
 
 - `componentAppId` \<string\> 第三方平台appId
 
@@ -326,44 +316,92 @@ app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, toolkit.message(c
 })
 ```
 
+
+
+#### 被动回复消息功能
+
+当第三方平台收到授权方用户消息时，可以使用被动回复功能回复消息。
+
+- **res.text(content)** 回复文本消息
+- **res.image(mediaId)** 回复图片
+- **res.voice(mediaId)** 回复语音
+- **res.video(mediaId [, title [, description]])** 回复视频
+- **res.musice(thumbMediaId [, HQMusicUrl [, musicUrl [, title [, description]]]])** 回复音乐
+
+```javascript
+let componentAppId = 'wx52ffab2939ad'
+app.post(`/wechat/message/${componentAppId}/:authorizerAppId`,
+    toolkit.message(componentAppId), (req, res) => {
+    let { MsgType, Content, MediaId, Label, Title, Description, Url} = req.wechat
+    switch (MsgType) {
+        case 'text':
+            res.text(Content)
+            break;
+        case 'image':
+            res.image(MediaId)
+            break;
+        case 'voice':
+            res.voice(MediaId)
+            break;
+        case 'video':
+            res.video(MediaId)
+            break;
+        case 'location':
+            res.text(Label)
+            break;
+        case 'link':
+            res.text(`<a href="${Url}">${Title}-${Description}</a>`)
+    }
+})
+```
+
+
+
+#### autoTest
+
+返回全网发布测试用例的中间件。该中间件需要放置在 [message](#message) 中间件后面，以及其他中间件前面。
+
+- **componentAppId** \<string\> 第三方平台APPID
+
+```javascript
+let componentAppId = 'wx52ffab2939ad'
+app.post(`/wechat/message/${componentAppId}/:authorizerAppId`,
+    toolkit.message(componentAppId), toolkit.autoTest(componentAppId),
+    (req, res) => {
+        res.end('success') // 响应微信服务器
+        console.log(req.wechat)
+})
+```
+
+
+
 #### oauth
 
 返回第三方平台代理微信公众号网页授权中间件。
 
-- `options` \<Object\>
-  - `componentAppId` \<string\> 
-  - `authorizerAppId` \<string\>
-  - `scope` \<string\>
-
+- `componentAppId` \<string\> 第三方平台APPID
+- `authorizerAppId` \<string\> 授权方APPID
+- `redirectUrl` \<string\> 授权成功后的重定向URL
+- `scope` \<string\> 网页授权的类型。可选
+- `state` \<string\> 授权的附带值。可选
 
 `scope`为授权作用域。可能的值为：` snsapi_base` 和 ` snsapi_userinfo`。默认为：`snsapi_base`
 
 ```javascript
-const options = {
-  componentAppId: '',
-  authorizerAppId: '',
-  scope: ''
-}
-app.get(`/wechat/oauth/${options.componentAppId}/${options.authorizerAppId}`, toolkit.oauth(options), (req, res) => {
-  // print req.wechat
-  /**
-  {
-    openid: 'oVtjJv5NEub-fbE7E6_P2_jCLMXo',
-    nickname: 'test',
-    sex: 1,
-    language: 'zh_CN',
-    city: '',
-    province: '',
-    country: '',
-    headimgurl: '',
-    privilege: [],
-    unionid: ''
-  }
-  */
-  res.setHeader('content-type', 'text/html; charset=utf-8')
-  res.end('<pre>' + JSON.stringify(req.wxuser, null, 4) + '</pre>')
-})
+const { OAUTH_TYPE_USERINFO } = require('wechat-open-toolkit')
+let componentAppId = 'wx304925fbea25bcbe'
+let authorizerAppId = 'wxc736b9251b3c6c41'
+let redirectUrl = 'https://domain.com/authorized'
+
+app.get(`/wechat/oauth/${componentAppId}/${authorizerAppId}`, 
+		toolkit.oauth(componentAppId, authorizerAppId, redirectUrl, OAUTH_TYPE_USERINFO))
 ```
+
+
+
+
+
+
 
 #### getAuthorizerAccessToken
 
@@ -395,6 +433,8 @@ const api = new WechatApi('', '', async () => {
 api.sendText(openid, text).then(console.log).catch(console.error)
 ```
 
+
+
 #### getApi
 
 获取指定第三方平台下指定微信公众号的`wechat-api`对象。
@@ -405,6 +445,8 @@ api.sendText(openid, text).then(console.log).catch(console.error)
 ```javascript
 toolkit.getApi('wxdf023kdsj02k', 'wx39930sj2ljfs').sendText(openId, text, callback)
 ```
+
+
 
 #### getJsConfig
 
