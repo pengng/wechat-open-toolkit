@@ -237,26 +237,35 @@ toolkit.on('error', function (err) {
 
 #### 函数列表
 
-中间件：
+##### 中间件：
 
 - **auth(componentAppId, redirectUrl [, authType])** [返回第三方平台授权中间件](#auth)
 - **events()** [返回第三方平台授权事件处理中间件](#events)
 - **message(componentAppId)** [返回授权方消息处理中间件](#message)
 - **autoTest(componentAppId)** [返回全网发布测试用例的中间件](#autoTest)
 - **oauth(componentAppId, authorizerAppId, redirectUrl [, scope [, state]])** [返回授权方网页授权中间件](#oauth)
-- **getAuthorizerAccessToken(componentAppId, authorizerAppId, callback)**  [获取指定第三方平台下指定微信公众号的 **access token**](#getauthorizeraccesstoken)
 
-主动调用接口：
+##### 主动调用接口：
 
-- `getJsConfig(options, callback)` [获取指定第三方平台下指定微信公众号的网页 **js config** 配置对象](#getjsconfig)
 - `getAuthorizerInfo(componentAppId, authorizerAppId, callback)` [获取授权方账号基本信息](#getauthorizerinfo)
-- `getAuthorizerOptionInfo(componentAppId, authorizerAppId, optionName, callback)` [获取授权方选项设置信息](#getauthorizeroptioninfo)
-- `setAuthorizerOption(componentAppId, authorizerAppId, optionName, optionValue, callback)` [设置授权方选项](#setauthorizeroption)
-- `clearQuota(componentAppId, callback)` [第三方平台对其所有API调用次数清零](#clearquota)
-- `createOpenAccount(componentAppId, authorizerAppId, callback)` [创建开放平台帐号并绑定公众号/小程序](#createopenaccount)
-- `bindOpenAccount(componentAppId, authorizerAppId, openAppId, callback)` [将公众号/小程序绑定到开放平台帐号下](#bindopenaccount)
-- `unbindOpenAccount(componentAppId, authorizerAppId, openAppId, callback)` [将公众号/小程序从开放平台帐号下解绑](#unbindopenaccount)
-- `getOpenAccount(componentAppId, authorizerAppId, callback)` [获取公众号/小程序所绑定的开放平台帐号](#getopenaccount)
+- **clearQuota(componentAppId, componentAccessToken)** [第三方平台对其所有API调用次数清零](#clearquota)
+
+- **getJsApiConfig(authorizerAppId, authorizerJsApiTicket, url)** [获取授权方 js sdk 配置](#getjsapiconfig)
+
+- **getOauthAccessToken(componentAppId, componentAccessToken, authorizerAppId, code)** [获取授权方网页授权 access token](#getoauthaccesstoken)
+
+- **getUserInfo(authorizerAccessToken, openId)** [获取授权方微信用户基本信息](#getuserinfo)
+- **send(authorizerAccessToken, openId, type, content)** [发送客服消息](#send)
+- **getAuthorizerOptionInfo(componentAppId, componentAccessToken, authorizerAppId, optionName)** [获取授权方的选项设置信息](#getauthorizeroptioninfo)
+
+- **setAuthorizerOption(componentAppId, componentAccessToken, authorizerAppId, optionName, optionValue)** [设置授权方选项信息](#setauthorizeroption)
+
+- **createOpenAccount(authorizerAppId, authorizerAccessToken)** [创建开放平台帐号并绑定公众号/小程序](#createopenaccount)
+- **bindOpenAccount(openAppId, authorizerAppId, authorizerAccessToken)** [将公众号/小程序绑定到开放平台帐号下](#bindopenaccount)
+- **unbindOpenAccount(openAppId, authorizerAppId, authorizerAccessToken)** [将公众号/小程序从开放平台帐号下解绑](#unbindopenaccount)
+- **getOpenAccount(authorizerAppId, authorizerAccessToken)** [获取公众号/小程序所绑定的开放平台帐号](#getopenaccount)
+
+
 
 
 
@@ -283,6 +292,8 @@ app.get(`/wechat/auth/${componentAppId}`, toolkit.auth(componentAppId, redirectU
 
 
 
+
+
 #### events
 
 返回第三方平台授权事件处理中间件。
@@ -290,6 +301,8 @@ app.get(`/wechat/auth/${componentAppId}`, toolkit.auth(componentAppId, redirectU
 ```javascript
 app.use('/wechat/events', toolkit.events())
 ```
+
+
 
 
 
@@ -315,6 +328,8 @@ app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, toolkit.message(c
   */
 })
 ```
+
+
 
 
 
@@ -357,6 +372,8 @@ app.post(`/wechat/message/${componentAppId}/:authorizerAppId`,
 
 
 
+
+
 #### autoTest
 
 返回全网发布测试用例的中间件。该中间件需要放置在 [message](#message) 中间件后面，以及其他中间件前面。
@@ -372,6 +389,8 @@ app.post(`/wechat/message/${componentAppId}/:authorizerAppId`,
         console.log(req.wechat)
 })
 ```
+
+
 
 
 
@@ -401,163 +420,138 @@ app.get(`/wechat/oauth/${componentAppId}/${authorizerAppId}`,
 
 
 
+#### getJsApiConfig
 
+获取授权方的 js sdk 配置对象
 
-#### getAuthorizerAccessToken
-
-获取指定第三方平台下指定微信公众号的access_token。
-
-- `componentAppId` \<string\>
-- `authorizerAppId` \<string\>
-- `callback` \<Function\>
-  - `err` \<Error\>
-  - `access_token` \<string\> 微信公众号授权access_token
-
-> 需要代理微信公众号调用api接口时，可以调用该接口获取授权的access_token后调用。
+- **authorizerAppId** \<string\> 授权方APPID
+- **authorizerJsApiTicket** \<string\> 授权方 JsApi Ticket
+- **url** \<string\> 要配置的网页链接
 
 ```javascript
-const WechatApi = require('co-wechat-api')
-const api = new WechatApi('', '', async () => {
-  return new Promise((resolve, reject) => {
-    toolkit.getAuthorizerAccessToken(componentAppId, authorizerAppId, (err, result) => {
-      if (err) {
-        return reject(err)
-      }
-      resolve({
-        accessToken: result.access_token,
-        expireTime: Date.now() + 1000 * 60
-      })
-    })
-  })
-})
-api.sendText(openid, text).then(console.log).catch(console.error)
-```
-
-
-
-#### getApi
-
-获取指定第三方平台下指定微信公众号的`wechat-api`对象。
-
-- `componentAppId` \<string\>
-- `authorizerAppId` \<string\>
-
-```javascript
-toolkit.getApi('wxdf023kdsj02k', 'wx39930sj2ljfs').sendText(openId, text, callback)
-```
-
-
-
-#### getJsConfig
-
-获取指定第三方平台下指定微信公众号的网页`jsConfig`配置对象。
-
-- `options` \<Object\>
-  - `componentAppId` \<string\>
-  - `authorizerAppId` \<string\>
-  - `url` \<string\> 网页链接
-- `callback` \<Function\>
-  - `err` \<Error\>
-  - `result` \<Object\>
-
-```javascript
-const options = {
-  componentAppId: '',
-  authorizerAppId: '',
-  url: ''
+let conf = WechatOpenToolkit.getJsApiConfig(authorizerAppId, authorizerJsApiTicket, url)
+/**
+{
+  appId: '',
+  timestamp: 158923408,
+  nonceStr: '292jslk30dk',
+  signature: '20kjafj20dfhl2j0sjhk2h3f0afjasd2'
 }
-toolkit.getJsConfig(options, (err, result) => {
-  if (!err) console.log(result)
-  /**
-  {
-    appId: '',
-    timestamp: 158923408,
-    nonceStr: '292jslk30dk',
-    signature: '20kjafj20dfhl2j0sjhk2h3f0afjasd2',
-    jsApiList: []
-  }
-  */
-})
+*/
 ```
 
-#### getAuthorizerInfo
 
-获取授权方账号基本信息
 
-- `componentAppId` \<string\> 微信第三方appId
-- `authorizerAppId` \<string\> 授权方公众号appId
-- `callback` \<Function\> 
-  - `err` \<Error\>
-  - `result` \<Object\>
+
+
+#### getOauthAccessToken
+
+获取授权方的网页授权 access token
+
+- **componentAppId** \<string\> 第三方平台APPID
+- **componentAccessToken** \<string\>
+- **authorizerAppId**
+- **code** \<string\> 网页授权后得到的临时 code
 
 ```javascript
-toolkit.getAuthorizerInfo(componentAppId, authorizerAppId, (err, result) => {
-  if (!err) console.log(result)
-})
+let ret = await WechatOpenToolkit.getOauthAccessToken(componentAppId, componentAccessToken, authorizerAppId, code)
 ```
 
-##### result 对象属性
 
-- `authorizerInfo` \<Object\>
-  - `nickname` \<string\> 授权方昵称
-  - `headImg` \<string\> 授权方头像
-  - `serviceTypeInfo` \<Object\>
-    - `id` **<number>** 授权方公众号类型，0代表订阅号，1代表由历史老帐号升级后的订阅号，2代表服务号
-  - `verifyTypeInfo` \<Object\>
-    - `id` **<number>** 授权方认证类型，-1代表未认证，0代表微信认证，1代表新浪微博认证，2代表腾讯微博认证，3代表已资质认证通过但还未通过名称认证，4代表已资质认证通过、还未通过名称认证，但通过了新浪微博认证，5代表已资质认证通过、还未通过名称认证，但通过了腾讯微博认证
-  - `username` \<string\> 授权方公众号的原始ID
-  - `principalName` \<string\> 公众号的主体名称
-  - `businessInfo` \<Object\> 用以了解以下功能的开通状况（0代表未开通，1代表已开通）：
-    - `openStore` **<number>** 是否开通微信门店功能
-    - `openScan` **<number>** 是否开通微信扫商品功能
-    - `openPay` **<number>** 是否开通微信支付功能
-    - `openCard` **<number>** 是否开通微信卡券功能
-    - `openShake` **<number>** 是否开通微信摇一摇功能
-  - `alias` \<string\> 授权方公众号所设置的微信号，可能为空
-  - `qrcodeUrl` \<string\> 二维码图片的URL，开发者最好自行也进行保存
-- `authorizationInfo` \<Object\> 授权信息
-  - `authorizerAppId` \<string\> 授权方appid
 
-*****
+
+
+#### getUserInfo
+
+获取授权方微信用户的基本信息
+
+- **authorizerAccessToken** \<string\> 授权方网页授权得到的 access token
+- **openId** \<string\> 授权方微信用户的openId
+
+```javascript
+let ret = await WechatOpenToolkit.getUserInfo(authorizerAccessToken, openId)
+```
+
+
+
+
+
+#### send
+
+发送客服消息
+
+- **authorizerAccessToken** \<string\> 授权方 access token
+- **openId** \<string\> 微信用户 openId
+- **type** \<string\> 消息类型
+- **content** \<string\> 消息主体
+
+```javascript
+await WechatOpenToolkit.send(authorizerAccessToken, openId, 'text', { content: '消息内容' }) // 发送文本消息
+await WechatOpenToolkit.send(authorizerAccessToken, openId, 'image', { media_id: 'MEDIA_ID' }) // 发送图片消息
+await WechatOpenToolkit.send(authorizerAccessToken, openId, 'voice', { media_id: 'MEDIA_ID' }) // 发送语音消息
+
+await WechatOpenToolkit.send(authorizerAccessToken, openId, 'video', {
+    media_id: 'MEDIA_ID',
+    thumb_media_id: 'MEDIA_ID',
+    title: 'TITLE',
+    description: 'DESCRIPTION'
+}) // 发送视频消息
+
+await WechatOpenToolkit.send(authorizerAccessToken, openId, 'music', {
+    title: 'TITLE',
+    description: 'DESCRIPTION',
+  	musicurl: 'MUSIC_URL',
+    hqmusicurl: 'HQ_MUSIC_URL',
+    thumb_media_id: 'MEDIA_ID'
+}) // 发送音乐消息
+
+await WechatOpenToolkit.send(authorizerAccessToken, openId, 'news', {
+  	articles: [{
+        title: 'TITLE',
+        description: 'DESCRIPTION',
+        url: 'URL',
+        picurl: 'PIC_URL'
+    }]
+}) // 发送图文消息
+
+await WechatOpenToolkit.send(authorizerAccessToken, openId, 'mpnews', { media_id: 'MEDIA_ID' }) // 发送图文消息
+```
+
+
+
+
 
 #### getAuthorizerOptionInfo
 
-获取授权方选项设置信息
-
-- `componentAppId` \<string\> 
-- `authorizerAppId` \<string\>
-- `optionName` \<string\>
-- `callback` \<Function\>
-  - `err` \<Error\>
-  - `result` \<Object\>
-
 该API用于获取授权方的公众号或小程序的选项设置信息，如：地理位置上报，语音识别开关，多客服开关。
 
+- **componentAppId**
+- **componentAccessToken**
+- **authorizerAppId**
+- **optionName**
+
 ```javascript
-toolkit.getAuthorizerOptionInfo(componentAppId, authorizerAppId, optionName, (err, result) => {
-  if (!err) console.log(result)
-})
+let ret = await WechatOpenToolkit.getAuthorizerOptionInfo(componentAppId, componentAccessToken, authorizerAppId, optionName)
 ```
 
-*****
+
+
+
 
 #### setAuthorizerOption
 
 设置授权方选项
 
-- `componentAppId` \<string\>
-- `authorizerAppId` \<string\>
-- `optionName` \<string\>
-- `optionValue` **<number>**
-- `callback` \<Function\>
-  - `err` \<Error\>
+- **componentAppId** \<string\>
+- **componentAccessToken** \<string\>
+- **authorizerAppId** \<string\>
+- **optionName** \<string\>
+- **optionValue** **<number>**
 
 该API用于设置授权方的公众号或小程序的选项信息，如：地理位置上报，语音识别开关，多客服开关。
 
 ```javascript
-toolkit.setAuthorizerOption(componentAppId, authorizerAppId, optionName, optionValue, (err) => {
-  if (!err) console.log('ok')
-})
+await WechatOpenToolkit.setAuthorizerOption(componentAppId, componentAccessToken, authorizerAppId, optionName, optionValue)
 ```
 
 | optionName                 | optionValue | 选项值说明             |
@@ -566,82 +560,80 @@ toolkit.setAuthorizerOption(componentAppId, authorizerAppId, optionName, optionV
 | voice_recognize（语音识别开关选项）  | `0`，`1`     | 关闭语音识别，开启语音识别     |
 | customer_service（多客服开关选项）  | `0`，`1`     | 关闭多客服，开启多客服       |
 
+
+
+
+
 #### clearQuota
 
 第三方平台对其所有API调用次数清零
 
-- `componentAppId` \<string\> 
-- `callback` \<Function\>
-  - `err` \<Error\>
+- **componentAppId** \<string\> 第三方平台APPID
+- **componentAccessToken** \<string>
 
 ```javascript
-toolkit.clearQuota(componentAppId, (err) => {
-  if (!err) console.log('ok')
-})
+await WechatOpenToolkit.clearQuota(componentAppId, componentAccessToken)
 ```
 
-***
+
+
+
 
 #### createOpenAccount
 
 创建开放平台帐号并绑定公众号/小程序
 
-- `componentAppId` \<string\>
-- `authorizerAppId` \<string\>
-- `callback` \<Function\>
-  - `err` \<Error\>
+- **authorizerAppId** \<string\>
+- **authorizerAccessToken**
 
 ```javascript
-toolkit.createOpenAccount(componentAppId, authorizerAppId, (err) => {
-  if (!err) console.log('ok')
-})
+await WechatOpenToolkit.createOpenAccount(authorizerAppId, authorizerAccessToken)
 ```
+
+
+
+
 
 #### bindOpenAccount
 
 将公众号/小程序绑定到开放平台帐号下
 
-- `componentAppId` \<string\>
-- `authorizerAppId` \<string\>
-- `openAppId` \<string\>
-- `callback` \<Function\>
-  - `err` \<Error\>
+- **openAppId** <string\>
+- **authorizerAppId** \<string\>
+- **authorizerAccessToken**
 
 ```javascript
-toolkit.bindOpenAccount(componentAppId, authorizerAppId, (err) => {
-  if (!err) console.log('ok')
-})
+await WechatOpenToolkit.bindOpenAccount(openAppId, authorizerAppId, authorizerAccessToken)
 ```
+
+
+
+
 
 #### unbindOpenAccount
 
 将公众号/小程序从开放平台帐号下解绑
 
-- `componentAppId` \<string\>
-- `authorizerAppId` \<string\>
-- `openAppId` \<string\>
-- `callback` **<Function>*
-  - `err` \<Error\>
+- **openAppId** <string\>
+- **authorizerAppId** \<string\>
+- **authorizerAccessToken**
 
 ```javascript
-toolkit.unbindOpenAccount(componentAppId, authorizerAppId, (err) => {
-  if (!err) console.log('ok')
-})
+await WechatOpenToolkit.unbindOpenAccount(openAppId, authorizerAppId, authorizerAccessToken)
 ```
+
+
+
+
 
 #### getOpenAccount
 
 获取公众号/小程序所绑定的开放平台帐号
 
-- `componentAppId` \<string\>
-- `authorizerAppId` \<string\>
-- `callback` \<Function\>
-  - `err` \<Error\>
-  - `result` \<Object\>
+- **authorizerAppId** \<string\>
+- **authorizerAccessToken** 
 
 ```javascript
-toolkit.getOpenAccount(componentAppId, authorizerAppId, (err, result) => {
-  if (!err) console.log(result)
-})
+await WechatOpenToolkit.getOpenAccount(authorizerAppId, authorizerAccessToken)
 ```
 
