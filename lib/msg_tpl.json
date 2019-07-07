@@ -1,0 +1,40 @@
+{
+    "text": {
+        "Content": 0
+    },
+
+    "image": {
+        "Image": {
+            "MediaId": 0
+        }
+    },
+
+    "voice": {
+        "Voice": {
+            "MediaId": 0
+        }
+    },
+
+    "video": {
+        "Video": {
+            "MediaId": 0,
+            "Title": 1,
+            "Description": 2
+        }
+    },
+
+    "music": {
+        "Music": {
+            "ThumbMediaId": 0,
+            "HQMusicUrl": 1,
+            "MusicUrl": 2,
+            "Title": 3,
+            "Description": 4
+        }
+    },
+
+    "news": {
+        "ArticleCount": "",
+        "Articles": ""
+    }
+}
