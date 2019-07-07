@@ -1,6 +1,6 @@
 {
     "name": "wechat-open-toolkit",
-    "version": "1.0.4",
+    "version": "1.1.0",
     "description": "微信开放平台工具套件。支持第三方平台代理公众号，完成网页授权、消息事件处理、JSSDK接口调用",
     "main": "index.js",
     "repository": {
