@@ -41,15 +41,19 @@ eventList.forEach(event => toolkit.on(event, console.log)) // 批量绑定事件
 // 通常需要绑定4个中间件
 // 1.绑定第三方平台授权事件的中间件
 app.use('/wechat/events', toolkit.events())
+
 options.list.forEach(({ componentAppId }) => {
+  
     // 2.绑定第三方平台网页授权的中间件
     app.get(`/wechat/auth/${componentAppId}`, toolkit.auth(componentAppId, 'https://domain.com/'))
+  
     // 3.绑定授权方网页授权的中间件
     app.get(`/wechat/oauth/${componentAppId}/:authorizerAppId`, (req, res, next) => {
         let { authorizerAppId } = req.params
         toolkit.oauth(options)(req, res, next)
         toolkit.oauth(componentAppId, authorizerAppId, 'https://domain.com/')(req, res, next)
     })
+  
     // 4.绑定授权方用户消息的中间件
     app.post(`/wechat/message/${componentAppId}/:authorizerAppId`,
         toolkit.message(componentAppId), toolkit.autoTest(componentAppId),
@@ -62,6 +66,53 @@ options.list.forEach(({ componentAppId }) => {
 app.listen(3000)
 console.log('server start at 3000')
 ```
+
+
+
+
+
+#### 接入 co-wechat-api 和 wechat-api 示例代码
+
+```javascript
+const CoWechatApi = require('co-wechat-api')
+const WechatApi = require('wechat-api')
+
+let store = {} // 缓存数据
+
+let componentAppId = 'test app id'
+let authorizerAppId = 'test app id'
+
+let api = new WechatApi('', '', callback => {
+  	// 每次调用 api.方法()，都会从 store 对象取 access token
+  	callback(null, {
+        accessToken: store[`${componentAppId}/${authorizerAppId}`],
+        expireTime: Date.now() + 1000 * 60
+		}
+})
+
+let coApi = new CoWechatApi('', '', async () => {
+  	// 每次调用 api.方法()，都会从 store 对象取 access token
+  	return {
+        accessToken: store[`${componentAppId}/${authorizerAppId}`],
+        expireTime: Date.now() + 1000 * 60
+    }
+})
+
+// 每次授权方 access token 更新时，同步更新缓存数据
+toolkit.on(EVENT_AUTHORIZER_ACCESS_TOKEN, function (ret) {
+  	let { AppId, authorizer_appid, authorizer_access_token } = ret
+    store[`${AppID}/${authorizer_appid}`] = authorizer_access_token // 更新
+})
+
+// 该功能需等到 access token 首次更新后，才能调用
+api.sendText()
+await coApi.sendText()
+///
+```
+
+> 示例代码仅供参考，根据实际情况调整。
+
+
 
 
 
@@ -78,6 +129,8 @@ console.log('server start at 3000')
 
 
 
+
+
 ### 微信开放平台 和 微信第三方平台
 
 微信开放平台账号需要在 [微信开放平台](https://open.weixin.qq.com/) 注册，注册后得到账号和密码。(注册时提供的邮箱之前未注册过公众号和小程序)
@@ -85,15 +138,6 @@ console.log('server start at 3000')
 一个微信开放平台账号可以创建多个第三方平台，创建后得到第三方平台的 **appId** 和 **appSecret**。也就是代码中使用的**componentAppId**、**componentAppSecret** 。(第三方平台的数量有上限，定制化开发服务商类型上限是**5个**、平台型服务商类型上限是**5个**)
 
 
-
-#### 第三方平台列表配置
-
-| 名称               | 类型   | 必填 | 描述                |
-| ------------------ | ------ | ---- | ------------------- |
-| componentAppId     | string | 是   | 微信第三方appId     |
-| componentAppSecret | string | 是   | 微信第三方appSecret |
-| token              | string | 是   | 消息校验token       |
-| encodingAESKey     | string | 是   | 消息加解密Key       |
 
 
 
@@ -125,6 +169,8 @@ toolkit.on(EVENT_COMPONENT_VERIFY_TICKET, function (result) {
 
 
 
+
+
 #### 当刷新第三方平台 access token 时触发 component_access_token 事件
 
 ```javascript
@@ -136,6 +182,8 @@ toolkit.on(EVENT_COMPONENT_ACCESS_TOKEN, function (result) {
 } */
 })
 ```
+
+
 
 
 
@@ -157,6 +205,8 @@ toolkit.on(EVENT_AUTHORIZER_ACCESS_TOKEN, function (result) {
 
 
 
+
+
 #### 当刷新授权方 jsapi_ticket 时触发 authorizer_jsapi_ticket 事件
 
 ```javascript
@@ -171,6 +221,8 @@ toolkit.on(EVENT_AUTHORIZER_JSAPI_TICKET, function (result) {
 } */
 })
 ```
+
+
 
 
 
@@ -192,6 +244,8 @@ toolkit.on(EVENT_AUTHORIZED, function (result) {
 
 
 
+
+
 #### 当已授权公众号更新权限时触发 updateauthorized 事件
 
 ```javascript
@@ -210,6 +264,8 @@ toolkit.on(EVENT_UPDATE_AUTHORIZED, function (result) {
 
 
 
+
+
 #### 当已授权公众号取消授权时触发 unauthorized 事件
 
 ```javascript
@@ -225,6 +281,8 @@ toolkit.on(EVENT_UNAUTHORIZED, function (result) {
 
 
 
+
+
 #### 当有错误时触发 error 事件
 
 ```Javascript
@@ -232,6 +290,8 @@ toolkit.on('error', function (err) {
 		console.error(err)
 })
 ```
+
+
 
 
 
