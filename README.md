@@ -247,7 +247,6 @@ toolkit.on('error', function (err) {
 
 ##### 主动调用接口：
 
-- `getAuthorizerInfo(componentAppId, authorizerAppId, callback)` [获取授权方账号基本信息](#getauthorizerinfo)
 - **clearQuota(componentAppId, componentAccessToken)** [第三方平台对其所有API调用次数清零](#clearquota)
 
 - **getJsApiConfig(authorizerAppId, authorizerJsApiTicket, url)** [获取授权方 js sdk 配置](#getjsapiconfig)
