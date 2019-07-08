@@ -5,7 +5,7 @@
 ### 示例代码
 
 ```shell
-npm i wechat-open-toolkit -S
+npm install wechat-open-toolkit
 ```
 
 ```javascript
@@ -18,48 +18,61 @@ const {
     EVENT_AUTHORIZER_JSAPI_TICKET
 } = WechatOpenToolkit
 
-const toolkit = new WechatOpenToolkit({
-    list: [
-        {
-            componentAppId: '', // 微信第三方平台 appId
-            componentAppSecret: '', // 微信第三方平台 appSecret
-            token: '', // 消息校验 Token
-            encodingAESKey: '' // 消息加解密 key
-        }
-    ]
-})
-
-// 列出需要侦听的全部事件列表
-let eventList = [
-    EVENT_COMPONENT_VERIFY_TICKET, EVENT_AUTHORIZED, EVENT_UPDATE_AUTHORIZED,
-    EVENT_UNAUTHORIZED, EVENT_COMPONENT_ACCESS_TOKEN, EVENT_AUTHORIZER_ACCESS_TOKEN, 
-    EVENT_AUTHORIZER_JSAPI_TICKET, 'error'
+// 微信第三方平台列表
+let list = [
+    {
+        componentAppId: '', // 微信第三方平台 appId
+        componentAppSecret: '', // 微信第三方平台 appSecret
+        token: '', // 消息校验 Token
+        encodingAESKey: '' // 消息加解密 key
+    }
 ]
 
-eventList.forEach(event => toolkit.on(event, console.log)) // 批量绑定事件处理函数
+let toolkit = new WechatOpenToolkit({ list })
 
-// 通常需要绑定4个中间件
-// 1.绑定第三方平台授权事件的中间件
-app.use('/wechat/events', toolkit.events())
+// 绑定全部事件
+toolkit.on(EVENT_COMPONENT_VERIFY_TICKET, ret => {
+    console.log(ret)
+})
+toolkit.on(EVENT_AUTHORIZED, ret => {
+    console.log(ret)
+})
+toolkit.on(EVENT_UPDATE_AUTHORIZED, ret => {
+    console.log(ret)
+})
+toolkit.on(EVENT_UNAUTHORIZED, ret => {
+    console.log(ret)
+})
+toolkit.on(EVENT_COMPONENT_ACCESS_TOKEN, ret => {
+    console.log(ret)
+})
+toolkit.on(EVENT_AUTHORIZER_ACCESS_TOKEN, ret => {
+    console.log(ret)
+})
+toolkit.on(EVENT_AUTHORIZER_JSAPI_TICKET, ret => {
+    console.log(ret)
+})
 
-options.list.forEach(({ componentAppId }) => {
+// 通常需要绑定5个中间件
+app.use('/wechat/events', toolkit.events()) // 第三方平台事件接收中间件
+
+list.forEach(({ componentAppId }) => {
+
+    let authMiddleware = toolkit.auth(componentAppId, 'https://domain.com/') // 第三方平台网页授权中间件
+    let msgMiddleware = toolkit.message(componentAppId) // 授权方用户消息接收中间件
+    let autoTestMiddleware = toolkit.autoTest(componentAppId) // 第三方平台全网发布测试中间件
+
+    app.get(`/wechat/auth/${componentAppId}`, authMiddleware)
   
-    // 2.绑定第三方平台网页授权的中间件
-    app.get(`/wechat/auth/${componentAppId}`, toolkit.auth(componentAppId, 'https://domain.com/'))
-  
-    // 3.绑定授权方网页授权的中间件
+    app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, msgMiddleware, autoTestMiddleware, (req, res) => {
+        res.end('success')
+        console.log(req.wechat)
+    })
+
     app.get(`/wechat/oauth/${componentAppId}/:authorizerAppId`, (req, res, next) => {
         let { authorizerAppId } = req.params
-        toolkit.oauth(options)(req, res, next)
-        toolkit.oauth(componentAppId, authorizerAppId, 'https://domain.com/')(req, res, next)
-    })
-  
-    // 4.绑定授权方用户消息的中间件
-    app.post(`/wechat/message/${componentAppId}/:authorizerAppId`,
-        toolkit.message(componentAppId), toolkit.autoTest(componentAppId),
-        (req, res) => {
-      			console.log(req.wechat)
-      			res.end('success') // 响应微信服务器
+        let oauthMiddleware = toolkit.oauth(componentAppId, authorizerAppId, 'https://domain.com/') // 授权方网页授权中间件
+        oauthMiddleware(req, res, next)
     })
 })
 
@@ -83,16 +96,16 @@ let componentAppId = 'test app id'
 let authorizerAppId = 'test app id'
 
 let api = new WechatApi('', '', callback => {
-  	// 每次调用 api.方法()，都会从 store 对象取 access token
-  	callback(null, {
+    // 每次调用 api.方法()，都会从 store 对象取 access token
+    callback(null, {
         accessToken: store[`${componentAppId}/${authorizerAppId}`],
         expireTime: Date.now() + 1000 * 60
-		}
+    }
 })
 
 let coApi = new CoWechatApi('', '', async () => {
-  	// 每次调用 api.方法()，都会从 store 对象取 access token
-  	return {
+    // 每次调用 api.方法()，都会从 store 对象取 access token
+    return {
         accessToken: store[`${componentAppId}/${authorizerAppId}`],
         expireTime: Date.now() + 1000 * 60
     }
@@ -100,7 +113,7 @@ let coApi = new CoWechatApi('', '', async () => {
 
 // 每次授权方 access token 更新时，同步更新缓存数据
 toolkit.on(EVENT_AUTHORIZER_ACCESS_TOKEN, function (ret) {
-  	let { AppId, authorizer_appid, authorizer_access_token } = ret
+    let { AppId, authorizer_appid, authorizer_access_token } = ret
     store[`${AppID}/${authorizer_appid}`] = authorizer_access_token // 更新
 })
 
@@ -191,15 +204,15 @@ toolkit.on(EVENT_COMPONENT_ACCESS_TOKEN, function (result) {
 
 ```javascript
 toolkit.on(EVENT_AUTHORIZER_ACCESS_TOKEN, function (result) {
-    /**
-    {
-        AppId: 'wx304925fbea25bcbe',
-        authorizer_appid: 'wxc736b9251b3c6c41',
-        authorizer_access_token: 'j7mR_dvcCAmUq5Iw-MuzE4sBT0unN-ukg7LR8EqZEQ1wZ7oyw0rs1Idk40d7uxriOubE3795JiFa3e5jDGdofRpTemXd2HLLV6p_i_Uwy7m2Rp-qv1k1ld-T9iCCDcVeQONdALDFDC',
-        authorizer_refresh_token: 'refreshtoken@@@6Esz0GgFsth_vRPtqjQd_aIQcCBcJ4iuzQFf3akLwgg',
-        expires_in: 7200
-    }
-    */
+/**
+{
+    AppId: 'wx304925fbea25bcbe',
+    authorizer_appid: 'wxc736b9251b3c6c41',
+    authorizer_access_token: 'j7mR_dvcCAmUq5Iw-MuzE4sBT0unN-ukg7LR8EqZEQ1wZ7oyw0rs1Idk40d7uxriOubE3795JiFa3e5jDGdofRpTemXd2HLLV6p_i_Uwy7m2Rp-qv1k1ld-T9iCCDcVeQONdALDFDC',
+    authorizer_refresh_token: 'refreshtoken@@@6Esz0GgFsth_vRPtqjQd_aIQcCBcJ4iuzQFf3akLwgg',
+    expires_in: 7200
+}
+*/
 })
 ```
 
@@ -212,8 +225,8 @@ toolkit.on(EVENT_AUTHORIZER_ACCESS_TOKEN, function (result) {
 ```javascript
 toolkit.on(EVENT_AUTHORIZER_JSAPI_TICKET, function (result) {
 /* {
-		errcode: 0,
-		errmsg: 'ok',
+    errcode: 0,
+    errmsg: 'ok',
     ticket: 'Zqqmael1_O_ddyFwCE14BtflzySMrtVpp086SHhK3P07xXnhjii2MTmKAGQHBwPOg8GsEtR9HG_dHUngs22ayQ',
     expires_in: 7200,
     componentAppId: 'wx304925fbea25bcbe',
@@ -287,7 +300,7 @@ toolkit.on(EVENT_UNAUTHORIZED, function (result) {
 
 ```Javascript
 toolkit.on('error', function (err) {
-		console.error(err)
+    console.error(err)
 })
 ```
 
@@ -297,7 +310,7 @@ toolkit.on('error', function (err) {
 
 #### 函数列表
 
-##### 中间件：
+##### 实例方法：
 
 - **auth(componentAppId, redirectUrl [, authType])** [返回第三方平台授权中间件](#auth)
 - **events()** [返回第三方平台授权事件处理中间件](#events)
@@ -305,7 +318,9 @@ toolkit.on('error', function (err) {
 - **autoTest(componentAppId)** [返回全网发布测试用例的中间件](#autoTest)
 - **oauth(componentAppId, authorizerAppId, redirectUrl [, scope [, state]])** [返回授权方网页授权中间件](#oauth)
 
-##### 主动调用接口：
+##### 类方法：
+
+- **getAuthorizerInfo(componentAppId, componentAccessToken, authorizerAppId)** [获取授权方的账号基本信息](#getauthorizerinfo)
 
 - **clearQuota(componentAppId, componentAccessToken)** [第三方平台对其所有API调用次数清零](#clearquota)
 
@@ -373,7 +388,9 @@ app.use('/wechat/events', toolkit.events())
 
 ```javascript
 const componentAppId = 'wx52ffab2939ad'
-app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, toolkit.message(componentAppId), (req, res) => {
+let msgMiddleware = toolkit.message(componentAppId) // 用户消息中间件
+
+app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, msgMiddleware, (req, res) => {
   /**
   print req.wechat
   {
@@ -403,22 +420,23 @@ app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, toolkit.message(c
 - **res.musice(thumbMediaId [, HQMusicUrl [, musicUrl [, title [, description]]]])** 回复音乐
 
 ```javascript
-let componentAppId = 'wx52ffab2939ad'
-app.post(`/wechat/message/${componentAppId}/:authorizerAppId`,
-    toolkit.message(componentAppId), (req, res) => {
+let componentAppId = 'wx52ffab2939ad' // 第三方平台APPID
+let msgMiddleware = toolkit.message(componentAppId) // 用户消息中间件
+
+app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, msgMiddleware, (req, res) => {
     let { MsgType, Content, MediaId, Label, Title, Description, Url} = req.wechat
     switch (MsgType) {
         case 'text':
-            res.text(Content)
+            res.text(Content) // 被动回复文本消息
             break;
         case 'image':
-            res.image(MediaId)
+            res.image(MediaId) // 被动回复图片消息
             break;
         case 'voice':
-            res.voice(MediaId)
+            res.voice(MediaId) // 被动回复语音消息
             break;
         case 'video':
-            res.video(MediaId)
+            res.video(MediaId) // 被动回复视频消息
             break;
         case 'location':
             res.text(Label)
@@ -441,11 +459,12 @@ app.post(`/wechat/message/${componentAppId}/:authorizerAppId`,
 
 ```javascript
 let componentAppId = 'wx52ffab2939ad'
-app.post(`/wechat/message/${componentAppId}/:authorizerAppId`,
-    toolkit.message(componentAppId), toolkit.autoTest(componentAppId),
-    (req, res) => {
-        res.end('success') // 响应微信服务器
-        console.log(req.wechat)
+let msgMiddleware = toolkit.message(componentAppId) // 用户消息中间件
+let testMiddleware = toolkit.autoTest(componentAppId) // 全网发布测试中间件
+
+app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, msgMiddleware, testMiddleware, (req, res) => {
+    res.end('success') // 响应微信服务器
+    console.log(req.wechat)
 })
 ```
 
@@ -471,8 +490,20 @@ let componentAppId = 'wx304925fbea25bcbe'
 let authorizerAppId = 'wxc736b9251b3c6c41'
 let redirectUrl = 'https://domain.com/authorized'
 
-app.get(`/wechat/oauth/${componentAppId}/${authorizerAppId}`, 
-		toolkit.oauth(componentAppId, authorizerAppId, redirectUrl, OAUTH_TYPE_USERINFO))
+let oauthMiddleware = toolkit.oauth(componentAppId, authorizerAppId, redirectUrl, OAUTH_TYPE_USERINFO)
+app.get(`/wechat/oauth/${componentAppId}/${authorizerAppId}`, oauthMiddleware)
+```
+
+
+
+
+
+#### getAuthorizerInfo
+
+获取授权方的账号基本信息
+
+```javascript
+let ret = await function getAuthorizerInfo(componentAppId, componentAccessToken, authorizerAppId)
 ```
 
 
@@ -559,13 +590,13 @@ await WechatOpenToolkit.send(authorizerAccessToken, openId, 'video', {
 await WechatOpenToolkit.send(authorizerAccessToken, openId, 'music', {
     title: 'TITLE',
     description: 'DESCRIPTION',
-  	musicurl: 'MUSIC_URL',
+    musicurl: 'MUSIC_URL',
     hqmusicurl: 'HQ_MUSIC_URL',
     thumb_media_id: 'MEDIA_ID'
 }) // 发送音乐消息
 
 await WechatOpenToolkit.send(authorizerAccessToken, openId, 'news', {
-  	articles: [{
+    articles: [{
         title: 'TITLE',
         description: 'DESCRIPTION',
         url: 'URL',
@@ -646,7 +677,7 @@ await WechatOpenToolkit.clearQuota(componentAppId, componentAccessToken)
 - **authorizerAccessToken**
 
 ```javascript
-await WechatOpenToolkit.createOpenAccount(authorizerAppId, authorizerAccessToken)
+let ret = await WechatOpenToolkit.createOpenAccount(authorizerAppId, authorizerAccessToken)
 ```
 
 
@@ -693,6 +724,6 @@ await WechatOpenToolkit.unbindOpenAccount(openAppId, authorizerAppId, authorizer
 - **authorizerAccessToken** 
 
 ```javascript
-await WechatOpenToolkit.getOpenAccount(authorizerAppId, authorizerAccessToken)
+let await WechatOpenToolkit.getOpenAccount(authorizerAppId, authorizerAccessToken)
 ```
 
