@@ -52,6 +52,9 @@ toolkit.on(EVENT_AUTHORIZER_ACCESS_TOKEN, ret => {
 toolkit.on(EVENT_AUTHORIZER_JSAPI_TICKET, ret => {
     console.log(ret)
 })
+toolkit.on('error', err => {
+    console.error(err)
+})
 
 // 通常需要绑定5个中间件
 app.use('/wechat/events', toolkit.events()) // 第三方平台事件接收中间件
@@ -362,7 +365,7 @@ app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, msgMiddleware, (r
 - **res.image(mediaId)** 回复图片
 - **res.voice(mediaId)** 回复语音
 - **res.video(mediaId [, title [, description]])** 回复视频
-- **res.musice(thumbMediaId [, HQMusicUrl [, musicUrl [, title [, description]]]])** 回复音乐
+- **res.music(thumbMediaId [, HQMusicUrl [, musicUrl [, title [, description]]]])** 回复音乐
 
 ```javascript
 let componentAppId = 'wx52ffab2939ad' // 第三方平台APPID
