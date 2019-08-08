@@ -72,10 +72,10 @@ list.forEach(({ componentAppId }) => {
         console.log(req.wechat)
     })
 
-    app.get(`/wechat/oauth/${componentAppId}/:authorizerAppId`, (req, res, next) => {
+    app.get(`/wechat/oauth/${componentAppId}/:authorizerAppId`, (req, res) => {
         let { authorizerAppId } = req.params
         let oauthMiddleware = toolkit.oauth(componentAppId, authorizerAppId, 'https://domain.com/') // 授权方网页授权中间件
-        oauthMiddleware(req, res, next)
+        oauthMiddleware(req, res)
     })
 })
 
@@ -439,7 +439,7 @@ app.get(`/wechat/oauth/${componentAppId}/${authorizerAppId}`, oauthMiddleware)
 获取授权方的账号基本信息
 
 ```javascript
-let ret = await function getAuthorizerInfo(componentAppId, componentAccessToken, authorizerAppId)
+let ret = await WechatOpenToolkit.getAuthorizerInfo(componentAppId, componentAccessToken, authorizerAppId)
 ```
 
 ### getJsApiConfig
