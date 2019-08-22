@@ -308,17 +308,20 @@ toolkit.on('error', function (err) {
 
 - **componentAppId** \<string\> 第三方平台APPID
 - **redirectUrl** \<string\> 授权成功后重定向的URL
-- **authType** \<number\> 授权的类型
+- **authType** \<number|string\> 授权的类型
+- **pageStyle** \<number\> 页面样式
 
 **redirectUrl** 该链接的域名必须和当前服务的域名相同，而且和微信第三方平台配置的域名相同。
 
-**authType** 指定授权时显示的可选项。**1** 表示仅展示公众号、**2** 表示仅展示小程序、**3** 表示展示公众号和小程序。默认为 **3** 
+**authType** 指定授权时显示的可选项。**1** 表示仅展示公众号、**2** 表示仅展示小程序、**3** 表示展示公众号和小程序。默认为 **3** 。也可以传入授权方 APPID，指定授权方。
+
+**pageStyle** 指定授权页面的样式。**1** 表示PC扫码授权；**2** 表示微信浏览器打开。默认值为 **1**。
 
 ```javascript
-const { AUTH_TYPE_BOTH } = require('wechat-open-toolkit')
+const { AUTH_TYPE_BOTH, PAGE_STYLE_PC } = require('wechat-open-toolkit')
 let componentAppId = 'wx52ffab2939ad'
 let redirectUrl = 'https://domain.com/authorized'
-let authMiddleware = toolkit.auth(componentAppId, redirectUrl, AUTH_TYPE_BOTH)
+let authMiddleware = toolkit.auth(componentAppId, redirectUrl, AUTH_TYPE_BOTH, PAGE_STYLE_PC)
 
 // 浏览器打开该路由即可扫码授权
 app.get(`/wechat/auth/${componentAppId}`, authMiddleware)
@@ -366,6 +369,11 @@ app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, msgMiddleware, (r
 - **res.voice(mediaId)** 回复语音
 - **res.video(mediaId [, title [, description]])** 回复视频
 - **res.music(thumbMediaId [, HQMusicUrl [, musicUrl [, title [, description]]]])** 回复音乐
+- **res.news(articles)** 回复图文
+  - **Title** 标题
+  - **Description** 描述
+  - **Url** 跳转链接
+  - **PicUrl** 缩略图链接
 
 ```javascript
 let componentAppId = 'wx52ffab2939ad' // 第三方平台APPID
@@ -390,7 +398,7 @@ app.post(`/wechat/message/${componentAppId}/:authorizerAppId`, msgMiddleware, (r
             res.text(Label)
             break;
         case 'link':
-            res.text(`<a href="${Url}">${Title}-${Description}</a>`)
+            res.news([{ Title, Description, Url }])
     }
 })
 ```
