@@ -29,6 +29,6 @@
     "homepage": "https://github.com/pengng/wechat-open-toolkit#readme",
     "dependencies": {
         "wechat-encrypt": "^1.1.0",
-        "xml2js": "^0.4.19"
+        "xml2js": "^0.5.0"
     }
 }
